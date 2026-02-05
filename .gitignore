@@ -1,0 +1,37 @@
+# pipeline output
+books/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# env
+.env
+.env.local
+.env*.local
+
+# node (for later)
+node_modules/
+.svelte-kit/
+.vercel/
+
+# ide
+.idea/
+.vscode/
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+
+# faiss indexes (large binary files)
+*.faiss
