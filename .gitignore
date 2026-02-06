@@ -35,3 +35,8 @@ Thumbs.db
 
 # faiss indexes (large binary files)
 *.faiss
+
+#claude
+skills/
+agents/
+CLAUDE.md
