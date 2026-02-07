@@ -34,6 +34,12 @@ class SuspiciouslyShortError(IngestError):
     pass
 
 
+class LLMAssistError(IngestError):
+    """LLM analysis failed (non-fatal)."""
+
+    pass
+
+
 class ChapterizeError(PipelineError):
     """Error during chapterize stage."""
 

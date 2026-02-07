@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 CHAPTER_PATTERNS = [
     (
         "chapter_numbered",
-        re.compile(r"^\s*(chapter|ch\.?)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$", re.IGNORECASE),
+        re.compile(r"^\s*(chapter|ch\.?)\s*(\d+|[ivxlcdm]+)\.?\s*(.*)$", re.IGNORECASE),
     ),
     (
         "part_book",
@@ -18,7 +18,7 @@ CHAPTER_PATTERNS = [
     ),
     (
         "section_markers",
-        re.compile(r"^\s*(prologue|epilogue|introduction|preface|foreword|afterword)\s*$", re.IGNORECASE),
+        re.compile(r"^\s*(prologue|epilogue|introduction|preface|foreword|afterword|postscript)\s*$", re.IGNORECASE),
     ),
     (
         "polish_chapter",
@@ -49,15 +49,36 @@ class ChapterCandidate:
     pattern_name: str
 
 
-def detect_chapter_boundaries(text: str) -> list[ChapterCandidate]:
+def detect_chapter_boundaries(
+    text: str,
+    llm_chapter_pattern: str | None = None,
+) -> list[ChapterCandidate]:
     """
     Detect potential chapter boundaries in text.
 
     Scans text line by line and identifies chapter headers.
 
+    Args:
+        text: Full text to scan
+        llm_chapter_pattern: Optional regex from LLM analysis, prepended to patterns
+
     Returns:
         List of ChapterCandidate in order of appearance
     """
+    # Build patterns list, optionally prepending LLM-detected pattern
+    patterns = list(CHAPTER_PATTERNS)
+    if llm_chapter_pattern:
+        try:
+            compiled = re.compile(llm_chapter_pattern, re.IGNORECASE)
+            # Reject patterns that match empty strings or trivially short strings
+            if compiled.match("") or compiled.match(" "):
+                logger.warning("LLM chapter pattern '%s' matches empty/blank lines, skipping", llm_chapter_pattern)
+            else:
+                patterns.insert(0, ("llm_detected", compiled))
+                logger.info("Prepended LLM chapter pattern to detection list")
+        except re.error as e:
+            logger.warning("Invalid LLM chapter pattern '%s': %s", llm_chapter_pattern, e)
+
     candidates: list[ChapterCandidate] = []
     lines = text.split("\n")
     char_offset = 0
@@ -69,8 +90,15 @@ def detect_chapter_boundaries(text: str) -> list[ChapterCandidate]:
             continue
 
         # Try each pattern
-        for pattern_name, pattern in CHAPTER_PATTERNS:
+        for pattern_name, pattern in patterns:
             if pattern.match(line):
+                # Reject single-letter roman numeral matches that are drop caps
+                if pattern_name == "roman_numeral_line" and _is_drop_cap(lines, line_num):
+                    logger.debug(
+                        "Skipping drop cap '%s' at line %d", line.strip(), line_num
+                    )
+                    break
+
                 # Validate with context
                 if _validate_chapter_context(lines, line_num):
                     title = _extract_title(line, pattern_name)
@@ -93,6 +121,33 @@ def detect_chapter_boundaries(text: str) -> list[ChapterCandidate]:
         char_offset += len(line) + 1
 
     return candidates
+
+
+def _is_drop_cap(lines: list[str], line_num: int) -> bool:
+    """Check if a single-letter line is a drop cap rather than a chapter heading.
+
+    Detects both lowercase continuations (M + r. Bennet) and uppercase
+    word fragments (M + R. BENNET, D + URING).  A word fragment starts
+    with uppercase followed by uppercase, period, or whitespace, while
+    a normal sentence start has uppercase followed by lowercase.
+    """
+    line = lines[line_num].strip()
+    if len(line) != 1:
+        return False
+    # Check next non-blank line
+    for i in range(line_num + 1, min(line_num + 4, len(lines))):
+        stripped = lines[i].strip()
+        if stripped:
+            # Lowercase start = clearly a drop cap (e.g., "r. Bennet")
+            if stripped[0].islower():
+                return True
+            # Uppercase word fragment: second char is uppercase, period,
+            # or whitespace (R., URING, T is) — not a normal sentence
+            # start like "Elizabeth" or "The" (uppercase + lowercase)
+            if len(stripped) >= 2 and (stripped[1].isupper() or stripped[1] in ".  "):
+                return True
+            return False
+    return False
 
 
 def _validate_chapter_context(lines: list[str], line_num: int) -> bool:
@@ -124,7 +179,7 @@ def _extract_title(line: str, pattern_name: str) -> str:
     if pattern_name in ("chapter_numbered", "part_book", "polish_chapter"):
         # Try to extract title after number
         match = re.match(
-            r"^(chapter|ch\.?|part|book|rozdzia[łl])\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$",
+            r"^(chapter|ch\.?|part|book|rozdzia[łl])\s*(\d+|[ivxlcdm]+)\.?\s*(.*)$",
             line,
             re.IGNORECASE,
         )
@@ -147,5 +202,8 @@ def _extract_title(line: str, pattern_name: str) -> str:
 
     if pattern_name == "all_caps_header":
         return line.strip().title()
+
+    if pattern_name == "llm_detected":
+        return line.strip()
 
     return line.strip()

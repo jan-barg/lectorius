@@ -69,6 +69,12 @@ def main() -> None:
     help="Start from this stage (requires existing outputs)",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+@click.option(
+    "--llm-assist",
+    is_flag=True,
+    default=False,
+    help="Use Claude to analyze text structure at ingest",
+)
 def process(
     input_path: Path,
     book_id: str,
@@ -76,6 +82,7 @@ def process(
     stop_after: str | None,
     from_stage: str | None,
     verbose: bool,
+    llm_assist: bool,
 ) -> None:
     """
     Process an epub through the pipeline.
@@ -85,7 +92,7 @@ def process(
     setup_logging(verbose)
     logger = logging.getLogger(__name__)
 
-    config = DEFAULT_CONFIG
+    config = PipelineConfig(llm_assist=llm_assist) if llm_assist else DEFAULT_CONFIG
 
     # Determine which stages to run
     start_idx = STAGES.index(from_stage) if from_stage else 0
@@ -136,15 +143,22 @@ def process(
     help="Output directory",
 )
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+@click.option(
+    "--llm-assist",
+    is_flag=True,
+    default=False,
+    help="Use Claude to analyze text structure",
+)
 def ingest(
     input_path: Path,
     book_id: str,
     output_dir: Path,
     verbose: bool,
+    llm_assist: bool,
 ) -> None:
     """Run the ingest stage only."""
     setup_logging(verbose)
-    config = DEFAULT_CONFIG
+    config = PipelineConfig(llm_assist=llm_assist) if llm_assist else DEFAULT_CONFIG
 
     try:
         report = run_ingest(input_path, output_dir, book_id, config)

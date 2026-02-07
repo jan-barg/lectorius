@@ -4,34 +4,48 @@ interactive audiobook app that answers your questions without spoilers
 
 ## status
 
-work in progress
+work in progress — pipeline (stages 1-4) is functional, tested on gutenberg epubs.
 
 ## structure
 ```
 apps/web/       # sveltekit frontend (coming soon)
-pipeline/       # python data pipeline
+pipeline/       # python data pipeline (epub → book packs)
 docs/           # specifications
+source/         # source epub files (gitignored)
 books/          # pipeline output (gitignored)
 ```
+
+## pipeline quickstart
+
+```bash
+cd pipeline
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# set api key for LLM-assisted analysis (recommended)
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# process a book
+lectorius-pipeline process \
+  --input ../source/the-great-gatsby.epub \
+  --book-id great-gatsby \
+  --output-dir ../books/great-gatsby \
+  --llm-assist
+```
+
+see [pipeline/README.md](pipeline/README.md) for full usage, CLI reference, and post-processing validation instructions.
 
 ## docs
 
 - [prd](docs/prd.md)
-- [pipeline spec](docs/pipeline.md)
+- [pipeline spec](docs/pipeline.md) — full pipeline specification with schemas, stages, LLM prompts
+- [pipeline readme](pipeline/README.md) — quickstart, CLI reference, tested books, validation prompt
 - [system architecture](docs/architecture.md)
 - [data model](docs/data-model.md)
 - [api spec](docs/api-spec.md)
 - [playback state machine](docs/playback-state-machine.md)
 - [llm prompts](docs/llm-prompts.md)
-
-## setup
-```bash
-# pipeline
-cd pipeline
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
 
 ## license
 

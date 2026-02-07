@@ -2,11 +2,12 @@
 
 import json
 import logging
+import re
 from pathlib import Path
 
 from lectorius_pipeline.config import PipelineConfig
 from lectorius_pipeline.errors import NoTextExtractedError, SuspiciouslyShortError
-from lectorius_pipeline.schemas import BookMeta, IngestReport, Manifest
+from lectorius_pipeline.schemas import BookMeta, IngestReport, LLMAnalysis, Manifest
 
 from .normalizer import (
     detect_and_remove_toc,
@@ -76,6 +77,27 @@ def run_ingest(
     # Strip title/byline from start (already in metadata)
     text = strip_title_byline(text, book_meta.title, book_meta.author)
 
+    # Optional LLM-assisted analysis
+    llm_analysis: LLMAnalysis | None = None
+    llm_assist_used = config.llm_assist
+
+    if config.llm_assist:
+        try:
+            from .llm_assist import run_llm_analysis
+
+            llm_analysis = run_llm_analysis(
+                text, book_meta.title, book_meta.author, config.llm_model
+            )
+            logger.info("LLM analysis completed successfully")
+
+            text = _apply_narrative_boundaries(text, llm_analysis, warnings)
+            text = _apply_junk_patterns(text, llm_analysis, warnings)
+
+        except Exception as e:
+            logger.warning("LLM analysis failed, continuing without: %s", e)
+            warnings.append(f"LLM analysis failed: {e}")
+            llm_analysis = None
+
     chars_after_cleanup = len(text)
     logger.info("Text after cleanup: %d characters", chars_after_cleanup)
 
@@ -99,6 +121,8 @@ def run_ingest(
         gutenberg_markers_found=gutenberg_found,
         toc_detected=toc_detected,
         toc_char_range=toc_range,
+        llm_analysis=llm_analysis,
+        llm_assist_used=llm_assist_used,
         warnings=warnings,
     )
 
@@ -149,3 +173,91 @@ def _write_report(reports_dir: Path, report: IngestReport) -> None:
     path = reports_dir / "ingest.json"
     path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     logger.debug("Wrote %s", path)
+
+
+def _find_phrase_fuzzy(text: str, phrase: str) -> int:
+    """Find phrase in text, allowing whitespace and case differences."""
+    words = phrase.split()[:5]
+    if len(words) < 3:
+        idx = text.find(phrase)
+        if idx >= 0:
+            return idx
+        # Fall back to case-insensitive
+        lower_text = text.lower()
+        return lower_text.find(phrase.lower())
+    pattern = r"\s+".join(re.escape(w) for w in words)
+    match = re.search(pattern, text)
+    if not match:
+        match = re.search(pattern, text, re.IGNORECASE)
+    return match.start() if match else -1
+
+
+def _apply_narrative_boundaries(
+    text: str, analysis: LLMAnalysis, warnings: list[str]
+) -> str:
+    """Trim text to narrative boundaries identified by LLM."""
+    max_trim_ratio = 0.50  # Never trim more than 50% from either end
+
+    if analysis.narrative_start_marker:
+        idx = _find_phrase_fuzzy(text, analysis.narrative_start_marker)
+        if idx > 0:
+            if idx < len(text) * max_trim_ratio:
+                logger.info("Trimmed %d chars of front matter", idx)
+                warnings.append(f"LLM trimmed {idx} chars of front matter")
+                text = text[idx:]
+            else:
+                pct = (idx * 100) // len(text)
+                logger.warning("Start marker at %d%% of text, skipping trim", pct)
+                warnings.append(f"LLM start marker too deep ({pct}%), skipped")
+        elif idx < 0:
+            logger.warning("Could not find narrative start marker in text")
+            warnings.append("LLM start marker not found in text")
+
+    if analysis.narrative_end_marker:
+        idx = _find_phrase_fuzzy(text, analysis.narrative_end_marker)
+        if idx > 0:
+            end_pos = idx + len(analysis.narrative_end_marker)
+            # Include to end of paragraph
+            next_break = text.find("\n\n", end_pos)
+            if next_break > 0:
+                end_pos = next_break
+            if end_pos > len(text) * max_trim_ratio:
+                trimmed = len(text) - end_pos
+                logger.info("Trimmed %d chars of back matter", trimmed)
+                warnings.append(f"LLM trimmed {trimmed} chars of back matter")
+                text = text[:end_pos]
+            else:
+                pct = (end_pos * 100) // len(text)
+                logger.warning("End marker at %d%% of text, skipping trim", pct)
+                warnings.append(f"LLM end marker too early ({pct}%), skipped")
+        elif idx < 0:
+            logger.warning("Could not find narrative end marker in text")
+            warnings.append("LLM end marker not found in text")
+
+    return text
+
+
+def _apply_junk_patterns(
+    text: str, analysis: LLMAnalysis, warnings: list[str]
+) -> str:
+    """Strip junk patterns identified by LLM from text."""
+    for i, pattern_str in enumerate(analysis.junk_patterns):
+        try:
+            pattern = re.compile(pattern_str, re.MULTILINE)
+            matches = pattern.findall(text)
+            if matches:
+                text = pattern.sub("", text)
+                desc = (
+                    analysis.junk_patterns[i]
+                    if i < len(analysis.junk_patterns)
+                    else pattern_str
+                )
+                logger.info("Stripped %d occurrences of: %s", len(matches), desc)
+                warnings.append(
+                    f"LLM stripped {len(matches)} occurrences of: {desc}"
+                )
+        except re.error as e:
+            logger.warning("Invalid junk pattern '%s': %s", pattern_str, e)
+            warnings.append(f"Invalid LLM junk pattern skipped: {pattern_str}")
+
+    return text

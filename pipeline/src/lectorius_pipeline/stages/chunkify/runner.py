@@ -1,6 +1,7 @@
 """Chunkify stage runner."""
 
 import logging
+import re
 from pathlib import Path
 
 from lectorius_pipeline.config import ChunkConfig, PipelineConfig
@@ -17,6 +18,18 @@ from .splitter import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Pattern to match chapter headings at start of chapter text
+CHAPTER_HEADING_RE = re.compile(
+    r"^(?:"
+    r"(?:chapter|ch\.?)\s*(?:\d+|[ivxlcdm]+)\.?\s*"
+    r"|"
+    r"[IVXLCDM]+\.?\s*"
+    r"|"
+    r"(?:prologue|epilogue|introduction|preface|foreword|afterword|postscript)\s*"
+    r")\n+",
+    re.IGNORECASE,
+)
 
 
 def run_chunkify(output_dir: Path, book_id: str, config: PipelineConfig) -> ChunkifyReport:
@@ -77,6 +90,9 @@ def run_chunkify(output_dir: Path, book_id: str, config: PipelineConfig) -> Chun
     if not all_chunks:
         raise ChunkTooLargeError("No chunks produced from text")
 
+    # Re-index all chunks globally (merging may have created gaps)
+    all_chunks = _reindex_chunks(all_chunks)
+
     # Validate offsets
     _validate_chunk_offsets(all_chunks, raw_text)
 
@@ -135,6 +151,14 @@ def _chunkify_chapter(
     Returns:
         Tuple of (chunks, updated_global_chunk_index)
     """
+    # Strip chapter heading from start (it's already in chapter metadata)
+    heading_skip = 0
+    heading_match = CHAPTER_HEADING_RE.match(chapter_text)
+    if heading_match:
+        heading_skip = heading_match.end()
+        logger.debug("Stripping %d-char chapter heading from chunk text", heading_skip)
+        chapter_text = chapter_text[heading_skip:]
+
     # Split into paragraphs
     paragraphs = split_text_into_paragraphs(chapter_text)
 
@@ -147,7 +171,7 @@ def _chunkify_chapter(
     chunks: list[Chunk] = []
     current_paragraphs: list[str] = []
     current_len = 0
-    current_start = chapter.char_start
+    current_start = chapter.char_start + heading_skip
     para_idx = 0
 
     while para_idx < len(processed_paragraphs):
@@ -256,6 +280,9 @@ def _chunkify_chapter(
     # Merge tiny chunks (threshold is now 200 chars)
     chunks = _merge_tiny_chunks(chunks, book_id, chunk_config)
 
+    # Merge chapter-heading-only chunks with next chunk
+    chunks = _merge_heading_chunks(chunks, book_id, chunk_config)
+
     return chunks, global_chunk_index
 
 
@@ -360,9 +387,73 @@ def _merge_tiny_chunks(
         else:
             merged.append(chunk)
 
-    # Re-index chunks to ensure sequential indices after merging
+    # Forward merge: if first chunk is still tiny, merge into next
+    if len(merged) > 1 and len(merged[0].text) < chunk_config.min_chars:
+        first = merged[0]
+        second = merged[1]
+        combined_text = first.text + "\n\n" + second.text
+        if len(combined_text) <= chunk_config.max_chars:
+            merged[1] = Chunk(
+                book_id=book_id,
+                chapter_id=first.chapter_id,
+                chunk_id=first.chunk_id,
+                chunk_index=first.chunk_index,
+                text=combined_text,
+                char_start=first.char_start,
+                char_end=second.char_end,
+            )
+            merged.pop(0)
+
+    return merged
+
+
+def _merge_heading_chunks(
+    chunks: list[Chunk],
+    book_id: str,
+    chunk_config: ChunkConfig,
+) -> list[Chunk]:
+    """Merge chunks that are only chapter headings (<50 chars) with next chunk."""
+    if len(chunks) <= 1:
+        return chunks
+
+    merged: list[Chunk] = []
+    skip_next = False
+
+    for i, chunk in enumerate(chunks):
+        if skip_next:
+            skip_next = False
+            continue
+
+        text = chunk.text.strip()
+        if (
+            len(text) < 50
+            and i + 1 < len(chunks)
+            and not ends_with_sentence_punctuation(text)
+        ):
+            next_chunk = chunks[i + 1]
+            combined = chunk.text + "\n\n" + next_chunk.text
+            if len(combined) <= chunk_config.max_chars:
+                merged.append(Chunk(
+                    book_id=book_id,
+                    chapter_id=chunk.chapter_id,
+                    chunk_id=chunk.chunk_id,
+                    chunk_index=chunk.chunk_index,
+                    text=combined,
+                    char_start=chunk.char_start,
+                    char_end=next_chunk.char_end,
+                ))
+                skip_next = True
+                continue
+
+        merged.append(chunk)
+
+    return merged
+
+
+def _reindex_chunks(chunks: list[Chunk]) -> list[Chunk]:
+    """Re-index all chunks with sequential global indices."""
     reindexed: list[Chunk] = []
-    for i, chunk in enumerate(merged, start=1):
+    for i, chunk in enumerate(chunks, start=1):
         chunk_id = f"{chunk.chapter_id}_{i:06d}"
         reindexed.append(Chunk(
             book_id=chunk.book_id,
@@ -373,7 +464,6 @@ def _merge_tiny_chunks(
             char_start=chunk.char_start,
             char_end=chunk.char_end,
         ))
-
     return reindexed
 
 

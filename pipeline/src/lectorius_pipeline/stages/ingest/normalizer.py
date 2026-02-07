@@ -185,21 +185,19 @@ def fix_hyphenation(text: str) -> str:
 
 def remove_page_artifacts(text: str) -> str:
     """
-    Remove page numbers and roman numeral lines.
+    Remove standalone page number lines.
 
-    Removes lines that are only:
-    - Standalone page numbers (1-4 digits)
-    - Standalone roman numerals
+    Removes lines that are only standalone Arabic page numbers (1-4 digits).
+
+    Note: Roman numeral lines are NOT stripped here because they are
+    commonly used as chapter headings (I, II, III...) and must survive
+    until the chapterize stage can detect them.
     """
     lines = text.split("\n")
     cleaned: list[str] = []
 
     for line in lines:
-        # Skip page number lines
         if PAGE_NUMBER_PATTERN.match(line):
-            continue
-        # Skip roman numeral lines
-        if ROMAN_NUMERAL_PATTERN.match(line):
             continue
         cleaned.append(line)
 
@@ -289,6 +287,10 @@ def _line_matches_author(line: str, author: str) -> bool:
     if line_lower.startswith("by ") and author_lower in line_lower:
         return True
 
+    # Standalone "by" line (author name will be on next line)
+    if line_lower == "by":
+        return True
+
     # Just the author name
     if line_lower == author_lower:
         return True
@@ -300,10 +302,36 @@ def _line_matches_author(line: str, author: str) -> bool:
     return False
 
 
+def fix_drop_caps(text: str) -> str:
+    """
+    Rejoin separated drop cap letters.
+
+    Fixes cases where a decorative drop cap letter is on its own line
+    followed by the rest of the word on the next line.
+    E.g., "M\\n\\nr. Bennet" -> "Mr. Bennet"
+    E.g., "M\\nR. BENNET" -> "MR. BENNET"
+    E.g., "D\\nURING dinner" -> "DURING dinner"
+    E.g., "I\\nT is a truth" -> "IT is a truth"
+
+    Two patterns:
+    1. Single uppercase + lowercase continuation (any newline count)
+    2. Single uppercase + uppercase word fragment (single newline only).
+       A word fragment is detected by the third char being uppercase,
+       a period, or whitespace (e.g., R., URING, T is) rather than
+       lowercase (e.g., In, The, Elizabeth = normal sentence start).
+    """
+    # Pattern 1: uppercase + lowercase continuation
+    text = re.sub(r"^([A-Z])\n{1,2}([a-z])", r"\1\2", text, flags=re.MULTILINE)
+    # Pattern 2: uppercase + uppercase word fragment (single newline for safety)
+    text = re.sub(r"^([A-Z])\n([A-Z])(?=[A-Z.\s])", r"\1\2", text, flags=re.MULTILINE)
+    return text
+
+
 def normalize_text(text: str) -> str:
     """Apply all normalization steps to text."""
     text = normalize_whitespace(text)
     text = fix_hyphenation(text)
+    text = fix_drop_caps(text)
     text = remove_page_artifacts(text)
     text = fix_space_before_punctuation(text)
     # Final whitespace cleanup after all processing

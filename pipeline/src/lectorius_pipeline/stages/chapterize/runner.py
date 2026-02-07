@@ -2,11 +2,12 @@
 
 import json
 import logging
+import re
 from collections import Counter
 from pathlib import Path
 
 from lectorius_pipeline.errors import OverlappingChaptersError
-from lectorius_pipeline.schemas import Chapter, ChapterizeReport, Manifest
+from lectorius_pipeline.schemas import Chapter, ChapterizeReport, IngestReport, Manifest
 
 from .detector import ChapterCandidate, detect_chapter_boundaries
 
@@ -38,8 +39,14 @@ def run_chapterize(output_dir: Path, book_id: str) -> ChapterizeReport:
     warnings: list[str] = []
     fallback_used = False
 
+    # Check for LLM analysis hints from ingest report
+    llm_chapter_pattern = _get_llm_chapter_pattern(output_dir)
+
     # Detect candidates
-    candidates = detect_chapter_boundaries(text)
+    candidates = detect_chapter_boundaries(text, llm_chapter_pattern=llm_chapter_pattern)
+
+    # Filter out mid-sentence false boundaries
+    candidates = _validate_chapter_boundaries(candidates, text, warnings)
     logger.info("Found %d chapter candidates", len(candidates))
 
     # Count pattern matches
@@ -94,8 +101,26 @@ def _build_chapters_from_candidates(
     """Build Chapter objects from candidates."""
     chapters: list[Chapter] = []
 
+    # If significant prose before the first candidate, create an implicit first chapter
+    if candidates and candidates[0].char_start > MIN_CHAPTER_CHARS:
+        chapters.append(
+            Chapter(
+                book_id=book_id,
+                chapter_id=f"{book_id}_ch001",
+                index=1,
+                title="Chapter 1",
+                char_start=0,
+                char_end=candidates[0].char_start,
+            )
+        )
+        logger.info(
+            "Created implicit first chapter (0-%d) before '%s'",
+            candidates[0].char_start,
+            candidates[0].title,
+        )
+
     for i, candidate in enumerate(candidates):
-        index = i + 1
+        index = len(chapters) + 1
         chapter_id = f"{book_id}_ch{index:03d}"
 
         # Determine char_end
@@ -220,3 +245,85 @@ def _write_report(reports_dir: Path, report: ChapterizeReport) -> None:
     path = reports_dir / "chapters.json"
     path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
     logger.debug("Wrote %s", path)
+
+
+_STRONG_PATTERNS = {
+    "chapter_numbered",
+    "llm_detected",
+    "section_markers",
+    "part_book",
+    "polish_chapter",
+}
+
+
+def _validate_chapter_boundaries(
+    candidates: list[ChapterCandidate],
+    text: str,
+    warnings: list[str],
+) -> list[ChapterCandidate]:
+    """Filter out chapter boundaries where previous text doesn't end with sentence punctuation.
+
+    Only validates weak patterns (roman_numeral_line, all_caps_header, numbered_title).
+    Strong patterns like chapter_numbered and llm_detected are always trusted.
+    """
+    if len(candidates) <= 1:
+        return candidates
+
+    valid = [candidates[0]]  # Always keep first
+
+    for candidate in candidates[1:]:
+        # Trust strong patterns unconditionally
+        if candidate.pattern_name in _STRONG_PATTERNS:
+            valid.append(candidate)
+            continue
+
+        before = text[: candidate.char_start].rstrip()
+        if not before:
+            valid.append(candidate)
+            continue
+
+        # Check last non-blank line for sentence-ending punctuation
+        last_line = ""
+        for line in reversed(before.split("\n")):
+            if line.strip():
+                last_line = line.strip()
+                break
+
+        # Accept if: no text, ends with punctuation, or last line is short
+        # (short lines are likely captions/headings, not mid-sentence prose)
+        if (
+            not last_line
+            or re.search(r'[.!?]["\')\]]*$', last_line)
+            or len(last_line) < 40
+        ):
+            valid.append(candidate)
+        else:
+            warnings.append(
+                f"Skipped mid-sentence boundary '{candidate.title}' "
+                f"at line {candidate.line_number}"
+            )
+            logger.debug(
+                "Rejected mid-sentence boundary: '%s' at line %d",
+                candidate.title,
+                candidate.line_number,
+            )
+
+    return valid
+
+
+def _get_llm_chapter_pattern(output_dir: Path) -> str | None:
+    """Load LLM chapter pattern hint from ingest report if available."""
+    path = output_dir / "reports" / "ingest.json"
+    if not path.exists():
+        return None
+
+    try:
+        report = IngestReport.model_validate_json(path.read_text())
+        if report.llm_analysis and report.llm_analysis.chapter_heading_pattern:
+            pattern = report.llm_analysis.chapter_heading_pattern
+            logger.info("Using LLM chapter pattern hint: %s", pattern)
+            return pattern
+    except Exception as e:
+        logger.warning("Could not load ingest report for LLM hints: %s", e)
+
+    return None

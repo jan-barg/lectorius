@@ -76,6 +76,19 @@ class Chunk(BaseModel):
     char_end: int
 
 
+class LLMAnalysis(BaseModel):
+    """LLM-generated analysis of text structure."""
+
+    narrative_start_marker: str = ""
+    narrative_end_marker: str = ""
+    junk_patterns: list[str] = Field(default_factory=list)
+    chapter_heading_pattern: str = ""
+    chapter_heading_examples: list[str] = Field(default_factory=list)
+    anomalies: list[str] = Field(default_factory=list)
+    model_used: str = ""
+    tokens_used: int = 0
+
+
 class IngestReport(BaseModel):
     """Report from ingest stage."""
 
@@ -87,6 +100,8 @@ class IngestReport(BaseModel):
     gutenberg_markers_found: bool
     toc_detected: bool
     toc_char_range: tuple[int, int] | None = None
+    llm_analysis: LLMAnalysis | None = None
+    llm_assist_used: bool = False
     warnings: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 

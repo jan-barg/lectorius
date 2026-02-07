@@ -21,6 +21,8 @@ class PipelineConfig:
     pipeline_version: str = "1.0.0"
     chunking: ChunkConfig = field(default_factory=ChunkConfig)
     min_text_length: int = 1000  # minimum chars for valid book
+    llm_assist: bool = False
+    llm_model: str = "claude-sonnet-4-20250514"
 
 
 # Default configuration instance
