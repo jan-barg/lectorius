@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lectorius-pipeline"
+version = "1.0.0"
+description = "Data pipeline for transforming epubs into book packs"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = [
+    "click>=8.1.0",
+    "pydantic>=2.0.0",
+    "ebooklib>=0.18",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "spacy>=3.7.0",
+    "pyyaml>=6.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+]
+
+[project.scripts]
+lectorius-pipeline = "lectorius_pipeline.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lectorius_pipeline"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=lectorius_pipeline --cov-report=term-missing"

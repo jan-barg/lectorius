@@ -51,7 +51,7 @@ books/{book_id}/
     "tts_voice_id": "voice_abc123",
     "tts_model": "eleven_multilingual_v2",
     "chunk_target_chars": 600,
-    "chunk_min_chars": 100,
+    "chunk_min_chars": 200,
     "chunk_max_chars": 1600,
     "checkpoint_interval_chunks": 50,
     "embedding_model": "text-embedding-3-small"
@@ -257,9 +257,11 @@ one json object per line:
 
 | parameter | default | description |
 |-----------|---------|-------------|
-| TARGET_CHARS | 600 | ideal chunk size |
-| MIN_CHARS | 100 | minimum chunk size |
+| TARGET_CHARS | 600 | ideal chunk size (~30-50 seconds of audio at typical narration speed) |
+| MIN_CHARS | 200 | minimum chunk size |
 | MAX_CHARS | 1600 | hard maximum |
+
+> **Note:** Each chunk should end with sentence-ending punctuation (`.`, `!`, `?`) to ensure natural audio breaks. The chunker will extend past TARGET_CHARS (up to MAX_CHARS) if needed to reach a sentence boundary.
 
 #### process
 
@@ -526,7 +528,7 @@ pipeline:
 
 chunking:
   target_chars: 600
-  min_chars: 100
+  min_chars: 200
   max_chars: 1600
   sentence_splitter: spacy
   spacy_model_en: en_core_web_sm
