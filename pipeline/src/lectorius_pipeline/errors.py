@@ -72,6 +72,25 @@ class OffsetMismatchError(ChunkifyError):
     pass
 
 
+class TTSError(PipelineError):
+    """Error during TTS stage."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, stage="tts")
+
+
+class TTSProviderError(TTSError):
+    """TTS provider API call failed."""
+
+    pass
+
+
+class AudioWriteError(TTSError):
+    """Failed to write audio file to disk."""
+
+    pass
+
+
 class ValidateError(PipelineError):
     """Error during validate stage."""
 

@@ -132,6 +132,44 @@ class ChunkifyReport(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
+class PlaybackMapEntry(BaseModel):
+    """Mapping from chunk to audio file."""
+
+    chunk_id: str
+    chapter_id: str
+    chunk_index: int
+    audio_path: str  # relative: audio/chunks/{chunk_id}.mp3
+    duration_ms: int
+    start_ms: int = 0  # always 0 for per-chunk audio
+    end_ms: int  # same as duration_ms
+
+
+class TTSChunkProgress(BaseModel):
+    """Progress record for a single chunk's TTS processing."""
+
+    chunk_id: str
+    status: Literal["completed", "failed"]
+    audio_path: str | None = None
+    duration_ms: int | None = None
+    error: str | None = None
+
+
+class TTSReport(BaseModel):
+    """Report from TTS stage."""
+
+    success: bool
+    book_id: str
+    provider: str
+    voice: str
+    model: str
+    total_chunks: int
+    completed_chunks: int
+    failed_chunks: int
+    total_duration_ms: int
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+
 class ValidationIssue(BaseModel):
     """Single validation issue."""
 
