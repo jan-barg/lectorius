@@ -1,7 +1,7 @@
 # lectorius — data pipeline specification
 
-**version:** 1.1  
-**status:** draft  
+**version:** 1.3
+**status:** draft
 **last updated:** february 2026
 
 ---
@@ -51,7 +51,7 @@ books/{book_id}/
     "tts_voice_id": "voice_abc123",
     "tts_model": "eleven_multilingual_v2",
     "chunk_target_chars": 600,
-    "chunk_min_chars": 100,
+    "chunk_min_chars": 200,
     "chunk_max_chars": 1600,
     "checkpoint_interval_chunks": 50,
     "embedding_model": "text-embedding-3-small"
@@ -176,12 +176,12 @@ one json object per line:
 
 ### stage 1: ingest
 
-**input:** epub file path  
-**output:** `raw_text.txt`, `book.json`, `reports/ingest.json`
+**input:** epub file path
+**output:** `raw_text.txt`, `book.json`, `manifest.json`, `reports/ingest.json`
 
 #### process
 
-1. **parse epub:** extract spine documents in reading order
+1. **parse epub:** extract spine documents in reading order, strip HTML tags
 2. **extract metadata:** populate book.json from opf metadata. if missing, derive from filename or leave as null
 3. **concatenate text:** join all spine documents with `\n\n`
 4. **strip boilerplate:**
@@ -189,7 +189,7 @@ one json object per line:
    - remove everything after `*** END OF THE PROJECT GUTENBERG EBOOK`
    - if markers not found, log warning and keep full text
 5. **detect and remove toc:**
-   - scan first 15% of text for toc patterns
+   - scan first 15% of text for "table of contents" / "contents" / "index" headers
    - if found, record range in report and remove
 6. **normalize whitespace:**
    - `\r\n` → `\n`
@@ -197,10 +197,43 @@ one json object per line:
    - collapse 3+ consecutive `\n` → `\n\n`
 7. **fix hyphenation:**
    - if line ends with `-` and next line starts lowercase: join without hyphen
-8. **remove page artifacts:**
-   - lines matching `^\s*\d+\s*$` (page numbers)
-   - lines matching `^\s*[ivxlcdm]+\s*$` alone (roman numerals)
-   - repeated header/footer lines
+8. **fix drop caps:**
+   - rejoin separated decorative initial letters with their continuation
+   - pattern 1: single uppercase + lowercase continuation (`M\nr. Bennet` → `Mr. Bennet`)
+   - pattern 2: single uppercase + uppercase word fragment (`D\nURING` → `DURING`, `M\nR. BENNET` → `MR. BENNET`). uses single-newline match only and validates the continuation looks like a word fragment (second char is uppercase, period, or whitespace) rather than a normal sentence start
+9. **remove page artifacts:**
+   - lines matching `^\s*\d+\s*$` (standalone arabic page numbers)
+   - roman numeral page numbers are NOT stripped here — they survive to chapterize so chapter headings like `I`, `II`, `III` aren't lost
+10. **fix punctuation spacing:**
+    - remove errant spaces before punctuation (e.g., `a draught , and` → `a draught, and`)
+11. **strip title/byline:** remove title and author name from start of text (already captured in book.json)
+
+#### llm-assisted analysis (optional)
+
+when `--llm-assist` is passed, the ingest stage calls claude to analyze the raw text after normalization. this helps catch issues that rule-based heuristics miss across different book formats and editions.
+
+**what it analyzes:**
+- **narrative boundaries** — identifies where the actual story begins and ends, skipping front matter (title pages, dedications, illustration lists) and back matter (printer colophons, transcriber notes)
+- **junk patterns** — regex patterns for non-narrative artifacts to strip (e.g., illustration captions, repeated headers)
+- **chapter heading pattern** — the specific regex for this book's chapter headings, passed downstream to the chapterize stage as a priority pattern
+- **anomalies** — structural problems observed (e.g., mixed formatting, unusual chapter numbering)
+
+**how it works:**
+1. samples the first ~4000 and last ~3000 characters of the normalized text
+2. sends to claude sonnet with a structured JSON prompt (see [llm prompt reference](#llm-ingest-analysis-prompt) below)
+3. parses the response into an `LLMAnalysis` model stored in `reports/ingest.json`
+4. applies narrative boundary trimming using fuzzy phrase matching — finds the LLM-provided markers in the text allowing whitespace/case differences, then trims front/back matter
+5. applies junk pattern stripping — compiles each regex and removes matches
+6. the `chapter_heading_pattern` is NOT applied here — it flows downstream to chapterize via the ingest report
+
+**safeguards:**
+- a **50% trim ratio** limit prevents catastrophic trimming if the LLM returns an incorrect marker. if a start marker would trim more than 50% from the front, or an end marker is before the 50% point, the trim is skipped with a warning
+- **fuzzy phrase matching** handles whitespace/case differences between LLM output and actual text — uses the first 5 words of the phrase joined by `\s+` for flexible matching, with a case-insensitive fallback
+- **LLM pattern validation** — chapter patterns that match empty or blank strings (e.g., `^$`) are rejected before use
+
+**cost:** ~$0.01-0.02 per book (one API call, ~3000 tokens in, ~500 out)
+
+**failure handling:** if the LLM call fails (API error, bad JSON, missing key), the pipeline continues without LLM analysis and logs a warning. the `--llm-assist` flag is opt-in and never blocks the pipeline.
 
 #### error handling
 
@@ -211,31 +244,38 @@ one json object per line:
 | output < 1000 chars | fail with "suspiciously short" error |
 | no gutenberg markers | warn, continue with full text |
 | no toc found | info log, continue |
+| llm analysis fails | warn, continue without analysis |
 
 ---
 
 ### stage 2: chapterize
 
-**input:** `raw_text.txt`, `reports/ingest.json`  
+**input:** `raw_text.txt`, `reports/ingest.json` (optional)
 **output:** `chapters.jsonl`, `reports/chapters.json`
 
 #### process
 
-1. **build candidate list:** scan text line by line, flag potential chapter headers using patterns:
+1. **load LLM hints:** if `reports/ingest.json` exists and contains a `chapter_heading_pattern`, load it and prepend to the pattern list as highest-priority `llm_detected` pattern (after validation)
+2. **build candidate list:** scan text line by line, flag potential chapter headers using patterns (in priority order):
    ```
-   ^\s*(chapter|rozdział)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$
-   ^\s*(part|część|tom)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$
-   ^\s*(prologue|epilogue|prolog|epilog)\s*$
-   ^\s*[ivxlcdm]{1,8}\s*$
-   ^[A-Z][A-Z\s]{5,50}$
-   ^\s*\d{1,3}\.\s+[A-Z]
+   llm_detected (from ingest report, if available)
+   chapter_numbered:    ^\s*(chapter|ch\.?)\s*(\d+|[ivxlcdm]+)\.?\s*(.*)$
+   part_book:           ^\s*(part|book)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$
+   section_markers:     ^\s*(prologue|epilogue|introduction|preface|foreword|afterword|postscript)\s*$
+   polish_chapter:      ^\s*(rozdzia[łl])\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$
+   roman_numeral_line:  ^\s*[IVXLCDM]{1,8}\s*$
+   numbered_title:      ^\s*\d{1,3}\.\s+[A-Z]
+   all_caps_header:     ^[A-Z][A-Z\s\-\']{5,50}$
    ```
-2. **toc cross-reference:** validate candidates against extracted toc entries
-3. **position validation:** candidate must appear at position 0 or after blank line
-4. **context validation:** examine 6 lines following candidate—accept if prose-like
-5. **build spans:** for each accepted header, set char_start/char_end
-6. **gap detection:** warn if any chapter > 20% of book
-7. **fallback:** if zero chapters, create single "Full Text" chapter
+3. **position validation:** candidate must appear at line 0 or after a blank line
+4. **drop cap filtering:** single-letter roman numeral matches are checked for drop cap false positives — if the next non-blank line starts with a word fragment (uppercase+uppercase, uppercase+period, or lowercase continuation), it's a drop cap and rejected
+5. **context validation:** examine 6 lines following candidate — accept if at least 2 lines look like prose (non-empty, not all-caps, has lowercase)
+6. **mid-sentence boundary filtering:** for weak patterns (`roman_numeral_line`, `all_caps_header`, `numbered_title`), check that the text before the boundary ends with sentence punctuation or is a short line (<40 chars). strong patterns (`chapter_numbered`, `llm_detected`, `section_markers`, `part_book`, `polish_chapter`) are always trusted
+7. **implicit first chapter:** if the first detected candidate starts more than 500 chars into the text, create an implicit "Chapter 1" covering the text before it (handles front matter or prologues that survive trimming)
+8. **build spans:** for each accepted header, set `char_start` / `char_end`
+9. **merge tiny chapters:** chapters shorter than 500 chars are merged with the previous chapter
+10. **gap detection:** warn if any chapter > 20% of book
+11. **fallback:** if zero chapters, create single "Full Text" chapter
 
 #### error handling
 
@@ -250,27 +290,33 @@ one json object per line:
 
 ### stage 3: chunkify
 
-**input:** `raw_text.txt`, `chapters.jsonl`  
+**input:** `raw_text.txt`, `chapters.jsonl`
 **output:** `chunks.jsonl`, `reports/chunks.json`
 
 #### configuration
 
 | parameter | default | description |
 |-----------|---------|-------------|
-| TARGET_CHARS | 600 | ideal chunk size |
-| MIN_CHARS | 100 | minimum chunk size |
+| TARGET_CHARS | 600 | ideal chunk size (~30-50 seconds of audio at typical narration speed) |
+| MIN_CHARS | 200 | minimum chunk size |
 | MAX_CHARS | 1600 | hard maximum |
+
+> **Note:** Each chunk should end with sentence-ending punctuation (`.`, `!`, `?`) to ensure natural audio breaks. The chunker will extend past TARGET_CHARS (up to MAX_CHARS) if needed to reach a sentence boundary.
 
 #### process
 
 1. initialize `global_chunk_index = 0`
 2. for each chapter:
    - extract text from raw_text using char offsets
+   - **strip chapter heading** from start of chapter text — matches `chapter/ch.` + number, roman numeral lines, or section markers (`prologue`, `epilogue`, etc.). the heading is already captured in chapter metadata and shouldn't appear in chunk text
    - split into paragraphs on `\n\n+`
    - unwrap hard-wrapped lines within paragraphs
    - convert paragraphs to units (sentence-split if > MAX_CHARS)
    - pack units into chunks ≤ MAX_CHARS
-   - merge tiny chunks < MIN_CHARS with neighbors
+   - **merge tiny chunks** < MIN_CHARS with neighbors:
+     - backward merge: merge with previous chunk if combined size ≤ MAX_CHARS
+     - **forward merge:** if the first chunk in a chapter is still tiny after backward merge, merge it into the next chunk
+   - **merge heading-only chunks:** chunks < 50 chars that don't end with sentence punctuation are merged forward into the next chunk
    - emit chunks with incrementing global index
 
 #### sentence splitting
@@ -300,7 +346,7 @@ sentences = re.split(pattern, paragraph)
 
 ### stage 4: validate
 
-**input:** `chunks.jsonl`  
+**input:** `chunks.jsonl`
 **output:** `reports/validation.json`
 
 #### checks
@@ -324,34 +370,66 @@ sentences = re.split(pattern, paragraph)
 
 ---
 
+Yes, update docs first. Keeps everything in sync.
+
+---
+
+## Changes to `/docs/pipeline.md`
+
+Find the TTS stage section and replace with:
+
+```markdown
 ### stage 5: generate audio (tts)
 
 **input:** `chunks.jsonl`, tts configuration  
 **output:** `audio/chunks/*.mp3`, `playback_map.jsonl`, `reports/tts.json`
 
+#### providers
+
+| provider | model | cost per 1M chars | use case |
+|----------|-------|-------------------|----------|
+| openai | tts-1 | $15 | development, testing |
+| openai | tts-1-hd | $30 | higher quality |
+| elevenlabs | eleven_multilingual_v2 | ~$300 (quota-based) | production quality |
+
 #### configuration
 
 | parameter | description |
 |-----------|-------------|
-| voice_id | elevenlabs voice identifier |
-| model | e.g., `eleven_multilingual_v2` |
-| output_format | `mp3_44100_128` |
+| provider | `openai` or `elevenlabs` |
+| voice | openai: alloy, echo, fable, onyx, nova, shimmer / elevenlabs: voice_id |
+| model | openai: tts-1 or tts-1-hd / elevenlabs: eleven_multilingual_v2 |
 | concurrency | max parallel requests (default: 5) |
 | retry_attempts | max retries per chunk (default: 3) |
-| retry_backoff_base | base delay in seconds (default: 2) |
 
 #### process
 
-1. load progress from existing tts.json if partial
+1. load progress from existing tts.json if resuming
 2. for each chunk:
    - skip if already completed
-   - call elevenlabs api
+   - call provider api
    - save to `audio/chunks/{chunk_id}.mp3`
-   - measure duration via ffprobe
+   - measure duration via mutagen
    - write playback_map entry
-3. use async with semaphore for concurrency
-4. retry with exponential backoff on failures
-5. sort playback_map.jsonl by chunk_index
+   - update progress
+3. retry with exponential backoff on failures
+4. sort playback_map.jsonl by chunk_index
+
+#### cli
+
+```bash
+# openai (default, cheap for testing)
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai
+
+# elevenlabs (production)
+lectorius-pipeline tts --book-dir ./books/my-book --provider elevenlabs
+
+# resume interrupted
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai --resume
+
+# custom voice
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai --voice nova
+```
 
 #### resumability
 
@@ -361,17 +439,17 @@ fully resumable—rerun skips completed chunks, processes only missing/failed.
 
 | condition | action |
 |-----------|--------|
-| api rate limit | backoff and retry |
+| api rate limit (429) | backoff and retry |
 | api server error (5xx) | backoff and retry |
 | api client error (4xx) | log failure, skip chunk |
 | audio file write fails | fail stage |
-| ffprobe fails | log warning with duration_ms = -1 |
+
 
 ---
 
 ### stage 6: build rag index
 
-**input:** `chunks.jsonl`, embedding configuration  
+**input:** `chunks.jsonl`, embedding configuration
 **output:** `rag/index.faiss`, `rag/meta.jsonl`, `reports/rag.json`
 
 #### configuration
@@ -400,7 +478,7 @@ def query_rag(question: str, current_chunk_index: int, k: int = 10, allow_spoile
     query_embedding = embed_text(question)
     faiss.normalize_L2(query_embedding)
     distances, indices = index.search(query_embedding, k * 2)
-    
+
     results = []
     for idx in indices[0]:
         meta = meta_lines[idx]
@@ -415,7 +493,7 @@ def query_rag(question: str, current_chunk_index: int, k: int = 10, allow_spoile
 
 ### stage 7: generate memory checkpoints
 
-**input:** `chunks.jsonl`, llm configuration  
+**input:** `chunks.jsonl`, llm configuration
 **output:** `memory/checkpoints.jsonl`, `reports/memory.json`
 
 #### configuration
@@ -477,20 +555,24 @@ def get_memory_context(current_chunk_index: int) -> dict:
 # full pipeline
 lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001
 
+# full pipeline with llm-assisted text analysis
+lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --llm-assist
+
+# stop after a specific stage
+lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --stop-after chunkify
+
+# resume from a specific stage (requires existing outputs from prior stages)
+lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --from-stage chapterize
+
 # individual stages
 lectorius-pipeline ingest --input book.epub --output-dir ./books/b001
-lectorius-pipeline chapterize --book-dir ./books/b001
-lectorius-pipeline chunkify --book-dir ./books/b001
-lectorius-pipeline validate --book-dir ./books/b001
-lectorius-pipeline tts --book-dir ./books/b001 --voice-id abc123
-lectorius-pipeline rag --book-dir ./books/b001
-lectorius-pipeline memory --book-dir ./books/b001
+lectorius-pipeline ingest --input book.epub --output-dir ./books/b001 --llm-assist
+lectorius-pipeline chapterize --book-dir ./books/b001 --book-id b001
+lectorius-pipeline chunkify --book-dir ./books/b001 --book-id b001
+lectorius-pipeline validate --book-dir ./books/b001 --book-id b001
 
-# resume failed tts
-lectorius-pipeline tts --book-dir ./books/b001 --resume
-
-# reprocess from specific stage
-lectorius-pipeline process --book-dir ./books/b001 --from-stage chunkify
+# verbose logging
+lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 -v
 ```
 
 ### stage dependencies
@@ -526,7 +608,7 @@ pipeline:
 
 chunking:
   target_chars: 600
-  min_chars: 100
+  min_chars: 200
   max_chars: 1600
   sentence_splitter: spacy
   spacy_model_en: en_core_web_sm
@@ -561,21 +643,91 @@ paths:
 
 ---
 
+## llm ingest analysis prompt
+
+the prompt sent to claude during `--llm-assist` ingest. it receives the first ~4000 and last ~3000 characters of the normalized text:
+
+```
+You are analyzing the raw text extracted from a digitized book for an audiobook pipeline.
+The text has already had Gutenberg boilerplate removed, but may still contain:
+- Front matter (title pages, dedication, epigraphs, illustration lists, publisher info)
+- Back matter (printer colophons, transcriber notes, advertisement pages)
+- Illustration captions or artifacts (e.g., "See larger view", "[Illustration: ...]")
+- Drop cap artifacts (single capital letters on their own line at chapter starts)
+
+Book title: {title}
+Book author: {author}
+Total text length: {total_chars} characters
+
+FIRST {head_len} CHARACTERS:
+"""
+{head_sample}
+"""
+
+LAST {tail_len} CHARACTERS:
+"""
+{tail_sample}
+"""
+
+Analyze the text and return ONLY valid JSON (no markdown, no explanation) with this schema:
+{
+  "narrative_start_marker": "<exact line where story prose begins>",
+  "narrative_end_marker": "<exact line where story prose ends>",
+  "junk_patterns": ["<Python regex patterns for non-narrative artifacts>"],
+  "chapter_heading_pattern": "<Python regex matching chapter headings>",
+  "chapter_heading_examples": ["<2-3 example headings>"],
+  "anomalies": ["<structural problems observed>"]
+}
+```
+
+the response is parsed into an `LLMAnalysis` pydantic model:
+
+```python
+class LLMAnalysis(BaseModel):
+    narrative_start_marker: str = ""
+    narrative_end_marker: str = ""
+    junk_patterns: list[str] = Field(default_factory=list)
+    chapter_heading_pattern: str = ""
+    chapter_heading_examples: list[str] = Field(default_factory=list)
+    anomalies: list[str] = Field(default_factory=list)
+    model_used: str = ""
+    tokens_used: int = 0
+```
+
+**data flow:** the `chapter_heading_pattern` from the LLM flows to the chapterize stage via `reports/ingest.json`. the chapterize runner loads the report and prepends the pattern to its detection list as the highest-priority `llm_detected` pattern. this allows the LLM to teach the pipeline about book-specific heading formats that the built-in patterns don't cover.
+
+---
+
 ## appendix: regex patterns
 
-### chapter detection
+### chapter detection (in priority order)
 
 ```python
 CHAPTER_PATTERNS = [
-    r'^\s*(chapter|ch\.?)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$',
-    r'^\s*(part|book)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$',
-    r'^\s*(prologue|epilogue|introduction|preface|foreword|afterword)\s*$',
-    r'^\s*(rozdzia[łl])\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$',
-    r'^\s*[ivxlcdm]{1,8}\s*$',
-    r'^\s*\d{1,3}\.\s+[A-Z]',
+    # llm_detected: prepended dynamically from ingest report
+    r'^\s*(chapter|ch\.?)\s*(\d+|[ivxlcdm]+)\.?\s*(.*)$',     # chapter_numbered
+    r'^\s*(part|book)\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$',          # part_book
+    r'^\s*(prologue|epilogue|introduction|preface|foreword|afterword|postscript)\s*$',
+    r'^\s*(rozdzia[łl])\s+(\d+|[ivxlcdm]+)\.?\s*(.*)$',        # polish_chapter
+    r'^\s*[IVXLCDM]{1,8}\s*$',                                  # roman_numeral_line
+    r'^\s*\d{1,3}\.\s+[A-Z]',                                   # numbered_title
+    r'^[A-Z][A-Z\s\-\']{5,50}$',                                # all_caps_header
 ]
+```
 
-ALL_CAPS_HEADER = r'^[A-Z][A-Z\s\-\']{5,50}$'
+note: `chapter_numbered` uses `\s*` (zero or more spaces) between the word "chapter" and the numeral. this handles malformed gutenberg texts where the space is missing (e.g., `CHAPTERXXVII.`).
+
+### drop cap detection
+
+```python
+# normalizer: rejoin drop caps during ingest
+r'^([A-Z])\n{1,2}([a-z])'            # pattern 1: M + r. Bennet → Mr. Bennet
+r'^([A-Z])\n([A-Z])(?=[A-Z.\s])'     # pattern 2: D + URING → DURING
+
+# detector: filter surviving drop caps during chapterize
+# single-letter line where next non-blank line:
+#   - starts lowercase (clearly a drop cap), OR
+#   - second char is uppercase/period (word fragment like R., URING)
 ```
 
 ### sentence splitting (fallback)
@@ -588,5 +740,4 @@ SENTENCE_END = r'(?<=[.!?])(?<![A-Z]\.)(?<!Mr\.)(?<!Mrs\.)(?<!Dr\.)\s+(?=[A-Z"])
 
 ```python
 PAGE_NUMBER = r'^\s*\d{1,4}\s*$'
-ROMAN_NUMERAL_LINE = r'^\s*[ivxlcdmIVXLCDM]{1,8}\s*$'
 ```
