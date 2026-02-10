@@ -1,6 +1,6 @@
 # lectorius — data pipeline specification
 
-**version:** 1.2
+**version:** 1.3
 **status:** draft
 **last updated:** february 2026
 
@@ -370,34 +370,66 @@ sentences = re.split(pattern, paragraph)
 
 ---
 
+Yes, update docs first. Keeps everything in sync.
+
+---
+
+## Changes to `/docs/pipeline.md`
+
+Find the TTS stage section and replace with:
+
+```markdown
 ### stage 5: generate audio (tts)
 
-**input:** `chunks.jsonl`, tts configuration
+**input:** `chunks.jsonl`, tts configuration  
 **output:** `audio/chunks/*.mp3`, `playback_map.jsonl`, `reports/tts.json`
+
+#### providers
+
+| provider | model | cost per 1M chars | use case |
+|----------|-------|-------------------|----------|
+| openai | tts-1 | $15 | development, testing |
+| openai | tts-1-hd | $30 | higher quality |
+| elevenlabs | eleven_multilingual_v2 | ~$300 (quota-based) | production quality |
 
 #### configuration
 
 | parameter | description |
 |-----------|-------------|
-| voice_id | elevenlabs voice identifier |
-| model | e.g., `eleven_multilingual_v2` |
-| output_format | `mp3_44100_128` |
+| provider | `openai` or `elevenlabs` |
+| voice | openai: alloy, echo, fable, onyx, nova, shimmer / elevenlabs: voice_id |
+| model | openai: tts-1 or tts-1-hd / elevenlabs: eleven_multilingual_v2 |
 | concurrency | max parallel requests (default: 5) |
 | retry_attempts | max retries per chunk (default: 3) |
-| retry_backoff_base | base delay in seconds (default: 2) |
 
 #### process
 
-1. load progress from existing tts.json if partial
+1. load progress from existing tts.json if resuming
 2. for each chunk:
    - skip if already completed
-   - call elevenlabs api
+   - call provider api
    - save to `audio/chunks/{chunk_id}.mp3`
-   - measure duration via ffprobe
+   - measure duration via mutagen
    - write playback_map entry
-3. use async with semaphore for concurrency
-4. retry with exponential backoff on failures
-5. sort playback_map.jsonl by chunk_index
+   - update progress
+3. retry with exponential backoff on failures
+4. sort playback_map.jsonl by chunk_index
+
+#### cli
+
+```bash
+# openai (default, cheap for testing)
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai
+
+# elevenlabs (production)
+lectorius-pipeline tts --book-dir ./books/my-book --provider elevenlabs
+
+# resume interrupted
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai --resume
+
+# custom voice
+lectorius-pipeline tts --book-dir ./books/my-book --provider openai --voice nova
+```
 
 #### resumability
 
@@ -407,11 +439,11 @@ fully resumable—rerun skips completed chunks, processes only missing/failed.
 
 | condition | action |
 |-----------|--------|
-| api rate limit | backoff and retry |
+| api rate limit (429) | backoff and retry |
 | api server error (5xx) | backoff and retry |
 | api client error (4xx) | log failure, skip chunk |
 | audio file write fails | fail stage |
-| ffprobe fails | log warning with duration_ms = -1 |
+
 
 ---
 
