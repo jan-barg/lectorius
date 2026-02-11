@@ -104,3 +104,29 @@ class ValidationFailedError(ValidateError):
     def __init__(self, error_count: int) -> None:
         super().__init__(f"Validation failed with {error_count} error(s)")
         self.error_count = error_count
+
+
+class RAGError(PipelineError):
+    """Error during RAG stage."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, stage="rag")
+
+
+class EmbeddingError(RAGError):
+    """Embedding API call failed."""
+
+    pass
+
+
+class MemoryError_(PipelineError):
+    """Error during memory stage."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, stage="memory")
+
+
+class CheckpointGenerationError(MemoryError_):
+    """Failed to generate a memory checkpoint."""
+
+    pass

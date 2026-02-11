@@ -1,6 +1,6 @@
 # lectorius pipeline
 
-transforms epub files into structured "book packs" for the lectorius audiobook app. the pipeline extracts text, detects chapters, splits into chunks suitable for TTS, and validates the output.
+transforms epub files into structured "book packs" for the lectorius audiobook app. the pipeline extracts text, detects chapters, splits into chunks, generates audio, builds a semantic search index, and creates story memory checkpoints.
 
 ## quickstart
 
@@ -16,49 +16,74 @@ python -m spacy download en_core_web_sm
 
 ### environment variables
 
-create a `.env` file in the project root (or export directly):
+create a `.env` file in the project root:
 
 ```bash
-# required for --llm-assist
+# required for --llm-assist (ingest) and memory stage
 ANTHROPIC_API_KEY=sk-ant-...
+
+# required for tts and rag stages
+OPENAI_API_KEY=sk-proj-...
+
+# required for elevenlabs tts (optional — openai works for dev)
+ELEVENLABS_API_KEY=sk_...
+ELEVENLABS_VOICE_ID=...
 ```
 
-### run the pipeline
+### process a book end-to-end
 
 ```bash
-# basic run (rule-based only)
-lectorius-pipeline process \
-  --input ../source/the-great-gatsby.epub \
-  --book-id great-gatsby \
-  --output-dir ../books/great-gatsby
+# load env vars
+export $(grep -v '^#' ../.env | xargs)
 
-# recommended: with LLM-assisted analysis
-source ../.env  # or: export ANTHROPIC_API_KEY=...
+# stages 1-4: ingest → chapterize → chunkify → validate
 lectorius-pipeline process \
   --input ../source/the-great-gatsby.epub \
   --book-id great-gatsby \
   --output-dir ../books/great-gatsby \
   --llm-assist
+
+# stage 5: generate audio
+lectorius-pipeline tts --book-dir ../books/great-gatsby
+
+# stage 6: build semantic search index
+lectorius-pipeline rag --book-dir ../books/great-gatsby
+
+# stage 7: generate story memory checkpoints
+lectorius-pipeline memory --book-dir ../books/great-gatsby
 ```
 
 ### output
 
 ```
 books/great-gatsby/
-├── manifest.json          # processing metadata
-├── raw_text.txt           # normalized full text
-├── book.json              # title, author, language
-├── chapters.jsonl         # chapter boundaries with char offsets
-├── chunks.jsonl           # ~600-char text chunks for TTS
+├── manifest.json              # processing metadata
+├── raw_text.txt               # normalized full text
+├── book.json                  # title, author, language
+├── chapters.jsonl             # chapter boundaries with char offsets
+├── chunks.jsonl               # ~600-char text chunks
+├── playback_map.jsonl         # chunk → audio file mapping
+├── audio/
+│   └── chunks/
+│       └── {chunk_id}.mp3     # one mp3 per chunk
+├── rag/
+│   ├── index.faiss            # FAISS vector index
+│   └── meta.jsonl             # vector_id → chunk_id mapping
+├── memory/
+│   └── checkpoints.jsonl      # periodic story summaries + entities
 └── reports/
-    ├── ingest.json        # extraction stats, LLM analysis
-    ├── chapters.json      # chapter detection report
-    └── chunks.json        # chunking stats
+    ├── ingest.json
+    ├── chapters.json
+    ├── chunks.json
+    ├── validation.json
+    ├── tts.json
+    ├── rag.json
+    └── memory.json
 ```
 
 ## stages
 
-the pipeline runs 4 stages sequentially:
+the pipeline has 7 stages. stages 1-4 run together via `process`. stages 5-7 run individually.
 
 ### 1. ingest
 
@@ -69,7 +94,7 @@ with `--llm-assist`, additionally calls claude sonnet to:
 - detect junk patterns (illustration captions, repeated headers)
 - identify the chapter heading format for downstream use
 
-cost: ~$0.01-0.03 per book.
+the LLM call is non-blocking — if it fails, the pipeline continues with rule-based heuristics only.
 
 ### 2. chapterize
 
@@ -77,36 +102,115 @@ scans the normalized text for chapter headings using a priority-ordered pattern 
 
 ### 3. chunkify
 
-splits each chapter's text into ~600-character chunks that end on sentence boundaries. strips chapter headings from chunk text (already in metadata). merges tiny chunks and heading-only chunks with neighbors.
+splits each chapter's text into ~600-character chunks that end on sentence boundaries. strips chapter headings from chunk text (already in metadata). merges tiny chunks and heading-only chunks with neighbors. uses spacy for sentence splitting (falls back to regex).
 
 ### 4. validate
 
 checks all chunks for errors (empty text, too long, duplicate IDs, offset overlaps) and warnings (too short, offset gaps, non-prose content). errors halt the pipeline; warnings are logged.
 
+### 5. tts (text-to-speech)
+
+generates one mp3 per chunk using OpenAI or ElevenLabs. processes chunks with bounded async concurrency (default 5). retries failed chunks with exponential backoff. writes `playback_map.jsonl` mapping each chunk to its audio file and duration.
+
+fully resumable — rerun skips completed chunks, only processes pending/failed.
+
+### 6. rag (retrieval-augmented generation)
+
+embeds all chunks using OpenAI `text-embedding-3-small` (1536 dimensions). normalizes vectors (L2) and builds a FAISS `IndexFlatIP` index for cosine similarity search. writes `rag/index.faiss` and `rag/meta.jsonl` linking vector IDs to chunk IDs.
+
+at query time, the index supports spoiler-free retrieval by filtering results to chunks at or before the reader's current position.
+
+### 7. memory (story checkpoints)
+
+generates periodic story summaries with character, place, and plot thread tracking using claude sonnet. for small books (<100 chunks), checkpoints at 25%, 50%, 75%, 100%. for larger books, every 50 chunks.
+
+each checkpoint contains:
+- a 2-3 paragraph running summary
+- people (name, aliases, role, description, first/last chunk)
+- places (name, description, first/last chunk)
+- plot threads (description, status open/resolved, chunk range)
+
 ## cli reference
 
 ```bash
-# full pipeline
+# full pipeline (stages 1-4)
 lectorius-pipeline process --input FILE --book-id ID --output-dir DIR [OPTIONS]
 
-# individual stages
+# individual stages (1-4)
 lectorius-pipeline ingest --input FILE --book-id ID --output-dir DIR [--llm-assist]
 lectorius-pipeline chapterize --book-dir DIR --book-id ID
 lectorius-pipeline chunkify --book-dir DIR --book-id ID
 lectorius-pipeline validate --book-dir DIR --book-id ID
+
+# stage 5: tts
+lectorius-pipeline tts --book-dir DIR [--provider openai|elevenlabs] [--voice VOICE] [--model MODEL] [--resume] [--concurrency N]
+
+# stage 6: rag
+lectorius-pipeline rag --book-dir DIR [--model MODEL] [--batch-size N]
+
+# stage 7: memory
+lectorius-pipeline memory --book-dir DIR [--model MODEL] [--interval N]
 ```
 
-### options
+### common options
 
 | flag | description |
 |------|-------------|
 | `--input` | path to epub file |
 | `--book-id` | identifier (lowercase, hyphens ok) |
-| `--output-dir` | output directory for book pack |
-| `--llm-assist` | use claude for text structure analysis |
+| `--output-dir` / `--book-dir` | output directory for book pack |
+| `--llm-assist` | use claude for text structure analysis (ingest) |
 | `--stop-after STAGE` | stop after ingest/chapterize/chunkify/validate |
 | `--from-stage STAGE` | resume from a stage (needs prior outputs) |
 | `-v, --verbose` | debug-level logging |
+
+### tts options
+
+| flag | description |
+|------|-------------|
+| `--provider` | `openai` (default) or `elevenlabs` |
+| `--voice` | openai: alloy/echo/fable/onyx/nova/shimmer. elevenlabs: voice_id |
+| `--model` | openai: tts-1/tts-1-hd. elevenlabs: eleven_multilingual_v2 |
+| `--resume` | skip already-completed chunks |
+| `--concurrency` | max parallel API requests (default: 5) |
+
+### rag options
+
+| flag | description |
+|------|-------------|
+| `--model` | embedding model (default: text-embedding-3-small) |
+| `--batch-size` | chunks per API call (default: 100) |
+
+### memory options
+
+| flag | description |
+|------|-------------|
+| `--model` | LLM model (default: claude-sonnet-4-20250514) |
+| `--interval` | chunks between checkpoints (default: 50) |
+
+## costs
+
+tts dominates costs. elevenlabs is ~20x more expensive than openai but sounds significantly better.
+
+### per-stage rates
+
+| stage | provider | rate |
+|-------|----------|------|
+| ingest (--llm-assist) | anthropic sonnet | ~$0.01-0.03/book (one API call) |
+| tts | openai tts-1 | $15/1M chars |
+| tts | openai tts-1-hd | $30/1M chars |
+| tts | elevenlabs | ~$300/1M chars (quota-based) |
+| rag | openai embeddings | $0.02/1M tokens (~negligible) |
+| memory | anthropic sonnet | ~$0.01-0.02/checkpoint |
+
+### real cost examples
+
+| book | chars | openai tts-1 | openai tts-1-hd | elevenlabs | rag + memory | total (dev) | total (prod) |
+|------|-------|-------------|----------------|------------|-------------|-------------|--------------|
+| rip van winkle | 43k | $0.64 | $1.28 | $12.80 | ~$0.06 | **~$0.72** | **~$12.89** |
+| yellow wallpaper | 31k | $0.47 | $0.94 | $9.40 | ~$0.06 | **~$0.55** | **~$9.49** |
+| great gatsby | 267k | $4.00 | $8.00 | $80.01 | ~$0.17 | **~$4.20** | **~$80.21** |
+| pride & prejudice | 684k | $10.27 | $20.53 | $205.30 | ~$0.65 | **~$10.95** | **~$205.98** |
 
 ## how --llm-assist works
 
@@ -126,16 +230,17 @@ the pipeline sends the first ~4000 and last ~3000 characters of the normalized t
 **what happens with it:**
 - `narrative_start_marker` / `narrative_end_marker` — used during ingest to trim front/back matter. fuzzy matching handles whitespace and case differences. a 50% safety limit prevents catastrophic trimming if the LLM returns a bad marker.
 - `junk_patterns` — compiled as regexes and stripped from text during ingest.
-- `chapter_heading_pattern` — saved in `reports/ingest.json` and loaded by the chapterize stage as the highest-priority detection pattern.
+- `chapter_heading_pattern` — saved in `reports/ingest.json` and loaded by the chapterize stage as the highest-priority detection pattern. patterns that match empty/blank strings are rejected.
 - the LLM call is **non-blocking** — if it fails, the pipeline continues with rule-based heuristics only.
 
 ## tested books
 
-| book | chapters | chunks | notes |
-|------|----------|--------|-------|
-| the great gatsby | 9 | 540 | first chunk: "In my younger and more vulnerable years..." |
-| pride and prejudice | 61 | 1398 | handles drop caps, missing-space headers (CHAPTERXXVII) |
-| rip van winkle | 3 | 83 | short story with postscript section |
+| book | chapters | chunks | tts audio | rag vectors | memory checkpoints |
+|------|----------|--------|-----------|-------------|-------------------|
+| the great gatsby | 9 | 540 | — | — | — |
+| pride and prejudice | 61 | 1398 | — | — | — |
+| rip van winkle | 3 | 83 | ~44 min | 83 | 4 (18 people, 12 places, 5 threads) |
+| the yellow wallpaper | 1 | 58 | ~32 min | 58 | 4 (11 people, 3 places, 6 threads) |
 
 ## post-processing: LLM validation pass
 
@@ -213,21 +318,13 @@ artifacts and pipeline errors.
 
 **how to run it:**
 
-1. process the book through the pipeline:
-   ```bash
-   lectorius-pipeline process --input source/book.epub --book-id my-book \
-     --output-dir books/my-book --llm-assist
-   ```
-
-2. feed the output to an LLM for review. you can provide `chapters.jsonl` and `chunks.jsonl` directly, or for large books, sample the first and last 20 chunks plus a random selection from the middle.
-
-3. fix any issues flagged by the LLM — typically this means editing `raw_text.txt` and re-running from chapterize:
+1. process the book through the full pipeline (stages 1-7)
+2. feed `chapters.jsonl` and `chunks.jsonl` to an LLM for review. for large books, sample the first and last 20 chunks plus a random selection from the middle.
+3. fix any issues flagged — typically edit `raw_text.txt` and re-run from chapterize:
    ```bash
    lectorius-pipeline process --input source/book.epub --book-id my-book \
      --output-dir books/my-book --from-stage chapterize
    ```
-
-this validation pass catches edge cases that the automated pipeline can't: book-specific formatting quirks, edition-specific artifacts, and OCR errors that vary from source to source.
 
 ## development
 
@@ -240,4 +337,4 @@ mypy src/
 
 ## full specification
 
-see [docs/pipeline.md](../docs/pipeline.md) for the complete pipeline specification including all schemas, error handling, and downstream stages (TTS, RAG, memory checkpoints).
+see [docs/pipeline.md](../docs/pipeline.md) for the complete pipeline specification including all schemas, error handling, and configuration options.

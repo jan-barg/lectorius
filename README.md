@@ -4,15 +4,15 @@ interactive audiobook app that answers your questions without spoilers
 
 ## status
 
-work in progress — pipeline (stages 1-4) is functional, tested on gutenberg epubs.
+work in progress — pipeline (all stages 1-7) is functional, tested on gutenberg epubs.
 
 ## structure
 ```
 apps/web/       # sveltekit frontend (coming soon)
 pipeline/       # python data pipeline (epub → book packs)
 docs/           # specifications
-source/         # source epub files (gitignored)
-books/          # pipeline output (gitignored)
+source/         # source epub files
+books/          # pipeline output (audio files gitignored due to size)
 ```
 
 ## pipeline quickstart

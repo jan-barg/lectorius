@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "book_id": "yellow-wallpaper",
+  "chapters_detected": 1,
+  "pattern_matches": {},
+  "fallback_used": true,
+  "warnings": [
+    "No chapter boundaries detected, created single 'Full Text' chapter",
+    "Chapter 'Full Text' is 100.0% of book"
+  ],
+  "errors": []
+}

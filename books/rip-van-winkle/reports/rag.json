@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "embedding_model": "text-embedding-3-small",
+  "total_chunks": 83,
+  "vectors_indexed": 83,
+  "dimensions": 1536,
+  "index_type": "IndexFlatIP",
+  "warnings": [],
+  "errors": []
+}

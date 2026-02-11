@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "total_chunks": 540,
+  "avg_chunk_chars": 493.9,
+  "min_chunk_chars": 200,
+  "max_chunk_chars": 1366,
+  "sentence_splitter_used": "regex",
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,35 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "source_path": "source/the-great-gatsby.epub",
+  "chars_extracted": 292786,
+  "chars_after_cleanup": 267747,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": {
+    "narrative_start_marker": "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since.",
+    "narrative_end_marker": "So we beat on, boats against the current, borne back ceaselessly into the past.",
+    "junk_patterns": [],
+    "chapter_heading_pattern": "^[IVX]+$",
+    "chapter_heading_examples": [
+      "I",
+      "II",
+      "III"
+    ],
+    "anomalies": [
+      "Table of Contents appears at beginning",
+      "Dedication 'Once again to Zelda' appears before narrative",
+      "Epigraph from Thomas Parke d'Invilliers appears before narrative",
+      "Single Roman numerals used as chapter headings rather than full 'Chapter' titles"
+    ],
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": 2327
+  },
+  "llm_assist_used": true,
+  "warnings": [
+    "LLM trimmed 279 chars of front matter",
+    "LLM trimmed 0 chars of back matter"
+  ],
+  "errors": []
+}

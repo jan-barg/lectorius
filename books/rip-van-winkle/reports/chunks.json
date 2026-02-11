@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "total_chunks": 83,
+  "avg_chunk_chars": 514.2,
+  "min_chunk_chars": 203,
+  "max_chunk_chars": 1157,
+  "sentence_splitter_used": "regex",
+  "warnings": [],
+  "errors": []
+}

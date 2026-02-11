@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "chapters_detected": 9,
+  "pattern_matches": {
+    "llm_detected": 8
+  },
+  "fallback_used": false,
+  "warnings": [],
+  "errors": []
+}

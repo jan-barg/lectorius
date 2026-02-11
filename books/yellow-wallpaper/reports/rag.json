@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "yellow-wallpaper",
+  "embedding_model": "text-embedding-3-small",
+  "total_chunks": 58,
+  "vectors_indexed": 58,
+  "dimensions": 1536,
+  "index_type": "IndexFlatIP",
+  "warnings": [],
+  "errors": []
+}

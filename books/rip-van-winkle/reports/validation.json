@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "total_chunks": 83,
+  "issues": [
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 193 chars between rip-van-winkle_ch002_000079 and rip-van-winkle_ch003_000080",
+      "chunk_id": "rip-van-winkle_ch003_000080",
+      "chunk_index": 80
+    }
+  ],
+  "error_count": 0,
+  "warning_count": 1
+}

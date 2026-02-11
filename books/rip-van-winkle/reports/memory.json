@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "llm_model": "claude-sonnet-4-20250514",
+  "total_chunks": 83,
+  "checkpoints_generated": 4,
+  "checkpoint_positions": [
+    20,
+    41,
+    62,
+    83
+  ],
+  "warnings": [],
+  "errors": []
+}

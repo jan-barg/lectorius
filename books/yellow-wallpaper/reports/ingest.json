@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "book_id": "yellow-wallpaper",
+  "source_path": "source/the-yellow-wallpaper.epub",
+  "chars_extracted": 51728,
+  "chars_after_cleanup": 31473,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": null,
+  "llm_assist_used": false,
+  "warnings": [],
+  "errors": []
+}

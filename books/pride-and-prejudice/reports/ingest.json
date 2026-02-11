@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "book_id": "pride-and-prejudice",
+  "source_path": "source/pride-and-prejudice.epub",
+  "chars_extracted": 741299,
+  "chars_after_cleanup": 688194,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": {
+    "narrative_start_marker": "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+    "narrative_end_marker": "With the Gardiners they were always on the most intimate terms. Darcy, as well as Elizabeth, really loved them; and they were both ever sensible of the warmest gratitude towards the persons who, by bringing her into Derbyshire, had been the means of uniting them.",
+    "junk_patterns": [
+      "\\[Colophon:.*?\\]",
+      "Reading Jane's Letters\\.\\s+Chap \\d+\\."
+    ],
+    "chapter_heading_pattern": "^Chapter\\s+[IVXLC]+\\.$",
+    "chapter_heading_examples": [
+      "Chapter I.",
+      "Chapter II.",
+      "Chapter III."
+    ],
+    "anomalies": [
+      "Table of contents appears to mix chapter listings with front matter",
+      "Publisher information and colophon appear mixed within front matter rather than clearly separated"
+    ],
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": 2724
+  },
+  "llm_assist_used": true,
+  "warnings": [
+    "LLM trimmed 28918 chars of front matter",
+    "LLM trimmed 82 chars of back matter"
+  ],
+  "errors": []
+}
