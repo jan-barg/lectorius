@@ -1,0 +1,51 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "total_chunks": 540,
+  "issues": [
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 142 chars between great-gatsby_ch001_000071 and great-gatsby_ch002_000072",
+      "chunk_id": "great-gatsby_ch002_000072",
+      "chunk_index": 72
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 108 chars between great-gatsby_ch002_000116 and great-gatsby_ch003_000117",
+      "chunk_id": "great-gatsby_ch003_000117",
+      "chunk_index": 117
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 138 chars between great-gatsby_ch003_000183 and great-gatsby_ch004_000184",
+      "chunk_id": "great-gatsby_ch004_000184",
+      "chunk_index": 184
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 127 chars between great-gatsby_ch004_000245 and great-gatsby_ch005_000246",
+      "chunk_id": "great-gatsby_ch005_000246",
+      "chunk_index": 246
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 203 chars between great-gatsby_ch007_000431 and great-gatsby_ch008_000432",
+      "chunk_id": "great-gatsby_ch008_000432",
+      "chunk_index": 432
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 115 chars between great-gatsby_ch008_000481 and great-gatsby_ch009_000482",
+      "chunk_id": "great-gatsby_ch009_000482",
+      "chunk_index": 482
+    }
+  ],
+  "error_count": 0,
+  "warning_count": 6
+}

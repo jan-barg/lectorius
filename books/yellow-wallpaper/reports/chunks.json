@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "yellow-wallpaper",
+  "total_chunks": 58,
+  "avg_chunk_chars": 540.4,
+  "min_chunk_chars": 409,
+  "max_chunk_chars": 671,
+  "sentence_splitter_used": "regex",
+  "warnings": [],
+  "errors": []
+}

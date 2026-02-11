@@ -189,3 +189,39 @@ class ValidateReport(BaseModel):
     issues: list[ValidationIssue] = Field(default_factory=list)
     error_count: int = 0
     warning_count: int = 0
+
+
+class RAGMeta(BaseModel):
+    """Metadata entry linking FAISS vector to chunk."""
+
+    vector_id: int  # index in faiss, 0-indexed
+    chunk_id: str
+    chunk_index: int
+    chapter_id: str
+
+
+class RAGReport(BaseModel):
+    """Report from RAG stage."""
+
+    success: bool
+    book_id: str
+    embedding_model: str
+    total_chunks: int
+    vectors_indexed: int
+    dimensions: int
+    index_type: str
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+
+
+class MemoryReport(BaseModel):
+    """Report from memory stage."""
+
+    success: bool
+    book_id: str
+    llm_model: str
+    total_chunks: int
+    checkpoints_generated: int
+    checkpoint_positions: list[int] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)

@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "chapters_detected": 3,
+  "pattern_matches": {
+    "section_markers": 2,
+    "all_caps_header": 1
+  },
+  "fallback_used": false,
+  "warnings": [
+    "Chapter 'Rip Van Winkle' is 86.6% of book"
+  ],
+  "errors": []
+}

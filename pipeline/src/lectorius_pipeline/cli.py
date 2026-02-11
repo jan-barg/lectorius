@@ -12,6 +12,8 @@ from lectorius_pipeline.errors import PipelineError
 from lectorius_pipeline.stages.chapterize import run_chapterize
 from lectorius_pipeline.stages.chunkify import run_chunkify
 from lectorius_pipeline.stages.ingest import run_ingest
+from lectorius_pipeline.stages.memory import run_memory
+from lectorius_pipeline.stages.rag import run_rag
 from lectorius_pipeline.stages.tts import run_tts
 from lectorius_pipeline.stages.validate import run_validate
 
@@ -305,6 +307,88 @@ def tts(
         click.echo(
             f"TTS completed: {report.completed_chunks}/{report.total_chunks} chunks, "
             f"{report.failed_chunks} failed, ~{duration_s}s total audio"
+        )
+    except PipelineError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command()
+@click.option(
+    "--book-dir",
+    required=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Book output directory (must contain chunks.jsonl)",
+)
+@click.option(
+    "--model",
+    "embedding_model",
+    default=None,
+    help="Embedding model (default: text-embedding-3-small)",
+)
+@click.option("--batch-size", default=100, help="Chunks per embedding API call")
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+def rag(
+    book_dir: Path,
+    embedding_model: str | None,
+    batch_size: int,
+    verbose: bool,
+) -> None:
+    """Build RAG vector index from chunks."""
+    setup_logging(verbose)
+    book_id = book_dir.name
+
+    try:
+        report = run_rag(
+            book_dir=book_dir,
+            book_id=book_id,
+            model=embedding_model,
+            batch_size=batch_size,
+        )
+        click.echo(
+            f"RAG completed: {report.vectors_indexed} vectors, "
+            f"{report.dimensions}d, model={report.embedding_model}"
+        )
+    except PipelineError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command()
+@click.option(
+    "--book-dir",
+    required=True,
+    type=click.Path(exists=True, path_type=Path),
+    help="Book output directory (must contain chunks.jsonl)",
+)
+@click.option(
+    "--model",
+    "llm_model",
+    default=None,
+    help="LLM model for summaries (default: claude-sonnet-4-20250514)",
+)
+@click.option("--interval", default=50, help="Chunks between checkpoints (default: 50)")
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+def memory(
+    book_dir: Path,
+    llm_model: str | None,
+    interval: int,
+    verbose: bool,
+) -> None:
+    """Generate memory checkpoints (story summaries + entity tracking)."""
+    setup_logging(verbose)
+    book_id = book_dir.name
+
+    try:
+        report = run_memory(
+            book_dir=book_dir,
+            book_id=book_id,
+            model=llm_model,
+            interval=interval,
+        )
+        click.echo(
+            f"Memory completed: {report.checkpoints_generated} checkpoints, "
+            f"model={report.llm_model}"
         )
     except PipelineError as e:
         click.echo(f"Error: {e}", err=True)

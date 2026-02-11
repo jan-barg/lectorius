@@ -1,0 +1,28 @@
+{
+  "book_id": "rip-van-winkle",
+  "version": 1,
+  "created_at": "2026-02-07T04:28:48.862274",
+  "updated_at": "2026-02-07T04:28:48.862277",
+  "pipeline_version": "1.0.0",
+  "stages_completed": [
+    "ingest",
+    "chapterize",
+    "chunkify",
+    "validate"
+  ],
+  "config": {
+    "tts_voice_id": "",
+    "tts_model": "",
+    "chunk_target_chars": 600,
+    "chunk_min_chars": 200,
+    "chunk_max_chars": 1600,
+    "checkpoint_interval_chunks": 50,
+    "embedding_model": ""
+  },
+  "stats": {
+    "chapters": 3,
+    "chunks": 83,
+    "total_audio_duration_ms": 0,
+    "total_chars": 43139
+  }
+}

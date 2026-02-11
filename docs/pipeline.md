@@ -1,6 +1,6 @@
 # lectorius — data pipeline specification
 
-**version:** 1.3
+**version:** 1.4
 **status:** draft
 **last updated:** february 2026
 
@@ -544,6 +544,40 @@ def get_memory_context(current_chunk_index: int) -> dict:
             return checkpoint
     return None
 ```
+
+#### future optimizations (todo)
+
+##### entity pruning for long books
+
+**issue:** memory checkpoints carry forward ALL entities cumulatively. for complex novels like pride & prejudice (30+ characters, 20+ threads), later checkpoints can exceed token limits.
+
+**current state:** max_tokens set to 8192, which handles MVP books but may not scale to epic novels (war and peace, les misérables).
+
+**proposed fix for v2:**
+
+1. **prune inactive entities** — only include characters/places seen in last 200 chunks
+2. **cap entity lists** — top 15-20 characters by importance (protagonist/antagonist/supporting only, drop "mentioned")
+3. **drop resolved threads** — remove threads marked "resolved" from previous checkpoints
+4. **compress descriptions** — limit entity descriptions to 50 chars
+
+**implementation sketch:**
+```python
+def prune_entities(entities: Entities, current_chunk: int, lookback: int = 200) -> Entities:
+    cutoff = current_chunk - lookback
+
+    # Keep only recently active characters
+    active_people = [p for p in entities.people if p.last_chunk >= cutoff or p.role in ("protagonist", "antagonist")]
+
+    # Cap at top 20
+    active_people = sorted(active_people, key=lambda p: p.last_chunk, reverse=True)[:20]
+
+    # Drop resolved threads
+    open_threads = [t for t in entities.open_threads if t.status == "open"]
+
+    return Entities(people=active_people, places=entities.places, open_threads=open_threads)
+```
+
+**trigger:** implement when processing books with 1000+ chunks or if memory stage costs exceed $5/book.
 
 ---
 

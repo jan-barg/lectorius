@@ -1,5 +1,14 @@
-# pipeline output
-books/
+# audio files (large)
+books/*/audio/
+
+# but track metadata (small, useful for testing)
+!books/*/book.json
+!books/*/manifest.json
+!books/*/chapters.jsonl
+!books/*/chunks.jsonl
+!books/*/playback_map.jsonl
+!books/*/rag/
+!books/*/memory/
 
 # python
 __pycache__/

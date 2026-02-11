@@ -1,0 +1,48 @@
+{
+  "success": true,
+  "book_id": "rip-van-winkle",
+  "source_path": "source/rip-van-winkle.epub",
+  "chars_extracted": 68756,
+  "chars_after_cleanup": 43139,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": {
+    "narrative_start_marker": "When these clouds broke, woe betide the valleys!",
+    "narrative_end_marker": "being the identical stream known by the name of the Kaaters-kill.",
+    "junk_patterns": [
+      "^See larger view$",
+      "^Title page$",
+      "^\"[^\"]*\"\\s*Frontispiece$",
+      "^To face page$",
+      "^IN COLOUR$",
+      "^ILLUSTRATIONS$",
+      "^IN TEXT$",
+      "^Page$",
+      "^Complete Edition.*First published.*$",
+      "^New Impressions.*$",
+      "^Cheaper Issue.*$",
+      "^LONDON: WILLIAM HEINEMANN$",
+      "^NEW · YORK: DOUBLEDAY · PAGE · & C$"
+    ],
+    "chapter_heading_pattern": "",
+    "chapter_heading_examples": [],
+    "anomalies": [
+      "Single letter 'ọ' appears on its own line, likely OCR artifact",
+      "Illustration captions mixed with narrative text",
+      "Publisher catalog pages at beginning",
+      "Publication history information embedded in text",
+      "Transcriber notes at end",
+      "Printer colophon at end"
+    ],
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": 2862
+  },
+  "llm_assist_used": true,
+  "warnings": [
+    "LLM trimmed 4157 chars of front matter",
+    "LLM trimmed 264 chars of back matter",
+    "LLM stripped 23 occurrences of: ^See larger view$"
+  ],
+  "errors": []
+}

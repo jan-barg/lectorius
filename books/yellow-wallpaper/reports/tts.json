@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "book_id": "yellow-wallpaper",
+  "provider": "openai",
+  "voice": "alloy",
+  "model": "tts-1",
+  "total_chunks": 58,
+  "completed_chunks": 58,
+  "failed_chunks": 0,
+  "total_duration_ms": 1912559,
+  "warnings": [],
+  "errors": []
+}
