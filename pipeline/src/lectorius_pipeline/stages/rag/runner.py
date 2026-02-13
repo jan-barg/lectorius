@@ -7,6 +7,7 @@ from pathlib import Path
 
 import faiss
 import numpy as np
+from supabase import create_client
 
 from lectorius_pipeline.errors import RAGError
 from lectorius_pipeline.schemas import Chunk, RAGMeta, RAGReport
@@ -92,6 +93,39 @@ def run_rag(
             )
             f.write(meta.model_dump_json() + "\n")
     logger.info("Wrote %d metadata entries to meta.jsonl", len(chunks))
+
+    # Insert embeddings into Supabase pgvector
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if not supabase_url or not supabase_key:
+        raise RAGError("SUPABASE_URL or SUPABASE_SERVICE_KEY environment variable not set")
+
+    supabase = create_client(supabase_url, supabase_key)
+
+    rows = []
+    for i, chunk in enumerate(chunks):
+        rows.append({
+            "book_id": book_id,
+            "chunk_id": chunk.chunk_id,
+            "chunk_index": chunk.chunk_index,
+            "chapter_id": chunk.chapter_id,
+            "embedding": embeddings_np[i].tolist(),
+        })
+
+    # Delete existing embeddings for this book (in case of re-run)
+    supabase.table("book_embeddings").delete().eq("book_id", book_id).execute()
+
+    # Insert in batches of 100
+    insert_batch_size = 100
+    total_insert_batches = (len(rows) + insert_batch_size - 1) // insert_batch_size
+    for i in range(0, len(rows), insert_batch_size):
+        batch = rows[i : i + insert_batch_size]
+        supabase.table("book_embeddings").insert(batch).execute()
+        logger.info(
+            "Inserted embeddings batch %d/%d", i // insert_batch_size + 1, total_insert_batches
+        )
+
+    logger.info("Inserted %d embeddings to Supabase", len(rows))
 
     # Build report
     report = RAGReport(

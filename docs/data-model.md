@@ -1,7 +1,7 @@
 # lectorius — data model
 
-**version:** 1.0  
-**status:** draft  
+**version:** 1.1
+**status:** draft
 **last updated:** february 2026
 
 ---
@@ -117,6 +117,24 @@ class RAGMeta(BaseModel):
     chunk_id: str
     chunk_index: int
     chapter_id: str
+
+# =============================================================================
+# database tables (supabase postgres + pgvector)
+# =============================================================================
+
+# book_embeddings — stores embedding vectors for similarity search
+# populated by pipeline RAG stage, queried by web app /api/ask
+#
+# CREATE TABLE book_embeddings (
+#   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+#   book_id text NOT NULL,
+#   chunk_id text NOT NULL,
+#   chunk_index integer NOT NULL,
+#   chapter_id text NOT NULL,
+#   embedding vector(1536) NOT NULL
+# );
+#
+# CREATE INDEX ON book_embeddings USING ivfflat (embedding vector_cosine_ops);
 
 # =============================================================================
 # memory checkpoints
@@ -411,16 +429,16 @@ export const DEFAULT_BOOK_STATE: BookStoreState = {
 ## 5. persisted state (localstorage)
 
 ```typescript
-// key: "lectorius_progress"
-export interface BookProgress {
+// key: "lectorius_playback"
+// per-book positions keyed by book_id
+export interface BookPosition {
   chunk_index: number;
   chunk_time_ms: number;
-  last_played_at: string;
 }
 
-export interface StoredProgress {
-  [book_id: string]: BookProgress;
-}
+export type SavedPositions = Record<string, BookPosition>;
+// example: { "yellow-wallpaper": { chunk_index: 12, chunk_time_ms: 3400 },
+//            "rip-van-winkle": { chunk_index: 5, chunk_time_ms: 0 } }
 
 // key: "lectorius_settings"
 export interface StoredSettings {

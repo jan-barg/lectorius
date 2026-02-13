@@ -1,6 +1,6 @@
 # lectorius — data pipeline specification
 
-**version:** 1.4
+**version:** 1.5
 **status:** draft
 **last updated:** february 2026
 
@@ -21,9 +21,9 @@ books/{book_id}/
 ├── audio/
 │   └── chunks/
 │       └── {chunk_id}.mp3
-├── rag/
-│   ├── index.faiss            # vector index
-│   └── meta.jsonl             # chunk metadata for retrieval
+├── rag/                           # local only (embeddings live in supabase pgvector)
+│   ├── index.faiss            # local debugging/testing
+│   └── meta.jsonl             # local reference (vector_id → chunk mapping)
 ├── memory/
 │   └── checkpoints.jsonl      # periodic story summaries
 └── reports/
@@ -449,8 +449,8 @@ fully resumable—rerun skips completed chunks, processes only missing/failed.
 
 ### stage 6: build rag index
 
-**input:** `chunks.jsonl`, embedding configuration
-**output:** `rag/index.faiss`, `rag/meta.jsonl`, `reports/rag.json`
+**input:** `chunks.jsonl`, embedding configuration, supabase credentials
+**output:** `rag/index.faiss` (local), `rag/meta.jsonl` (local), supabase `book_embeddings` table, `reports/rag.json`
 
 #### configuration
 
@@ -469,24 +469,34 @@ fully resumable—rerun skips completed chunks, processes only missing/failed.
    - normalize vectors (L2)
    - add to index
    - write meta.jsonl entries
-3. save index to `rag/index.faiss`
+3. save index to `rag/index.faiss` (local reference/debugging)
+4. insert embeddings into supabase `book_embeddings` table:
+   - delete existing rows for this book_id (idempotent re-runs)
+   - insert rows in batches of 100 with book_id, chunk_id, chunk_index, chapter_id, embedding
 
-#### runtime query contract
+#### environment variables
 
-```python
-def query_rag(question: str, current_chunk_index: int, k: int = 10, allow_spoilers: bool = False) -> list[Chunk]:
-    query_embedding = embed_text(question)
-    faiss.normalize_L2(query_embedding)
-    distances, indices = index.search(query_embedding, k * 2)
+requires `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (service key, not anon — bypasses RLS for insert).
 
-    results = []
-    for idx in indices[0]:
-        meta = meta_lines[idx]
-        if allow_spoilers or meta["chunk_index"] <= current_chunk_index:
-            results.append(load_chunk(meta["chunk_id"]))
-        if len(results) >= k:
-            break
-    return results
+#### local vs remote outputs
+
+| output | location | purpose |
+|--------|----------|---------|
+| `rag/index.faiss` | local book dir | python debugging/testing with faiss |
+| `rag/meta.jsonl` | local book dir | local reference, maps vector_id to chunk |
+| `book_embeddings` rows | supabase postgres | web app vector similarity search via pgvector |
+
+#### runtime query contract (web app)
+
+```sql
+-- supabase rpc or postgrest query
+select chunk_id, chunk_index, chapter_id,
+       1 - (embedding <=> $query_embedding) as similarity
+from book_embeddings
+where book_id = $book_id
+  and chunk_index <= $current_chunk_index  -- no spoilers
+order by embedding <=> $query_embedding
+limit $k;
 ```
 
 ---
@@ -662,6 +672,8 @@ rag:
   embedding_dimensions: 1536
   batch_size: 100
   index_type: IndexFlatIP
+  # embeddings are also inserted into supabase book_embeddings table
+  # requires SUPABASE_URL and SUPABASE_SERVICE_KEY env vars
 
 memory:
   checkpoint_interval: 50

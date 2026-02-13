@@ -1,7 +1,7 @@
 # lectorius — system architecture
 
-**version:** 1.2  
-**status:** draft  
+**version:** 1.3
+**status:** draft
 **last updated:** february 2026
 
 ---
@@ -34,9 +34,10 @@ EXTERNAL APIs                      SUPABASE
     ├─ Anthropic Claude (LLM)          │    - Book Packs
     └─ ElevenLabs (TTS)                │    - System audio
                                        │
-                                       └─ Database (future)
-                                            - User auth
-                                            - Progress sync
+                                       └─ Database (Postgres + pgvector)
+                                            - book_embeddings (vector search)
+                                            - User auth (future)
+                                            - Progress sync (future)
 ```
 
 ---
@@ -91,7 +92,7 @@ stateless serverless functions. all heavy lifting (llm, tts) happens here.
 | component | usage |
 |-----------|-------|
 | storage | book pack files: audio chunks, metadata, system fallback audio |
-| database | mvp: none. future: user accounts, progress sync |
+| database | postgres + pgvector: `book_embeddings` table for vector similarity search. future: user accounts, progress sync |
 
 ---
 
@@ -134,7 +135,7 @@ stateless serverless functions. all heavy lifting (llm, tts) happens here.
 6. api: assemble context
    - chunks around playhead (last ~60 sec)
    - latest memory checkpoint ≤ chunk_index
-   - rag query (filtered to chunk_index) if needed
+   - pgvector similarity search on book_embeddings (filtered to chunk_index)
 7. api: call claude with system prompt + context + question → answer_text
 8. api: call elevenlabs tts → answer_audio (mp3 bytes)
 9. api: return { question_text, answer_text, answer_audio }
@@ -167,9 +168,9 @@ supabase-storage/
 │       ├── audio/
 │       │   └── chunks/
 │       │       └── {chunk_id}.mp3
-│       ├── rag/
-│       │   ├── index.faiss
-│       │   └── meta.jsonl
+│       ├── rag/                        # local only (not uploaded)
+│       │   ├── index.faiss            # local debugging/testing
+│       │   └── meta.jsonl             # local reference
 │       └── memory/
 │           └── checkpoints.jsonl
 └── system/
@@ -281,12 +282,12 @@ interface BookStore {
 ### 6.2 localstorage schema
 
 ```typescript
-// key: "lectorius_progress"
-interface StoredProgress {
+// key: "lectorius_playback"
+// per-book positions keyed by book_id
+interface SavedPositions {
   [book_id: string]: {
     chunk_index: number;
     chunk_time_ms: number;
-    last_played_at: string;
   }
 }
 
@@ -393,7 +394,6 @@ supabase storage cp -r ./output/great-gatsby storage://books/great-gatsby
 | change | trigger | impact |
 |--------|---------|--------|
 | add supabase auth | user accounts needed | add auth middleware, progress table |
-| move rag to server | faiss too large for client | new `/api/rag/query` endpoint |
 | streaming tts | latency requirements tighten | websocket or sse for audio chunks |
 | native mobile app | wake word requirement | separate react native / flutter codebase |
 | pipeline as service | user uploads | queue system, background jobs |
