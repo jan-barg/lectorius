@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { qa } from '$lib/stores/qa';
 	import { playback } from '$lib/stores/playback';
-	import { Recorder, blobToBase64 } from '$lib/services/recorder';
+	import { type Recorder, blobToBase64 } from '$lib/services/recorder';
 	import { get } from 'svelte/store';
 	import { onDestroy } from 'svelte';
 
 	export let bookId: string;
 	export let onAnswerComplete: () => void;
-
-	const recorder = new Recorder();
+	export let recorder: Recorder;
 	let answerAudio: HTMLAudioElement | null = null;
 
 	let isRecording = false;
@@ -106,23 +105,38 @@
 		}, 2000);
 	}
 
+	function handleMouseEnter() {
+		if (isProcessing || isPlayingAnswer) return;
+		recorder.warmUp();
+	}
+
+	function handleTouchStart() {
+		if (isProcessing || isPlayingAnswer) return;
+		recorder.warmUp();
+	}
+
 	function handlePointerLeave() {
 		if (isRecording) {
 			recorder.cancelRecording();
 			qa.reset();
 			onAnswerComplete();
+		} else {
+			recorder.releaseWarmStream();
 		}
 	}
 
 	onDestroy(() => {
 		unsub();
 		recorder.cancelRecording();
+		// Don't releaseStream here — Player owns the stream lifecycle
 		answerAudio?.pause();
 		answerAudio = null;
 	});
 </script>
 
 <button
+	onmouseenter={handleMouseEnter}
+	ontouchstart={handleTouchStart}
 	onpointerdown={handlePointerDown}
 	onpointerup={handlePointerUp}
 	onpointerleave={handlePointerLeave}

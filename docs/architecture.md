@@ -1,6 +1,6 @@
 # lectorius — system architecture
 
-**version:** 1.3
+**version:** 1.4
 **status:** draft
 **last updated:** february 2026
 
@@ -318,19 +318,93 @@ interface StoredSettings {
 
 ### 7.2 recording (push-to-talk)
 
-```javascript
-const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+the recorder (`$lib/services/recorder.ts`) uses the mediarecorder api with a multi-phase warm-up strategy to eliminate latency on button press.
 
-recorder.ondataavailable = (e) => chunks.push(e.data);
-recorder.onstop = () => {
-  const blob = new Blob(chunks, { type: 'audio/webm' });
-  sendToAPI(blob);
-};
+**the problem:** calling `getUserMedia()` + creating a `MediaRecorder` on button press adds ~1-1.5s of delay before recording actually starts. the user presses the button and nothing happens for over a second.
 
-recorder.start();  // on button press
-recorder.stop();   // on button release
+**the solution:** a 3-phase warm-up pipeline that front-loads the expensive work.
+
+#### phase 1: stream pre-acquisition (on first play)
+
+when the user presses play for the first time, `Player.svelte` calls `recorder.acquireStream()`. this satisfies the browser's user-gesture requirement for mic permissions and stores the `MediaStream` for reuse across multiple recordings.
+
 ```
+user presses play → Player calls recorder.acquireStream()
+                     └── getUserMedia() → stores this.stream
+                         (browser shows mic permission prompt if needed)
+```
+
+the stream is kept alive between recordings. `stopRecording()` only cleans up the `MediaRecorder`, not the stream. `releaseStream()` is called on page destroy.
+
+#### phase 2: warm-up on hover (on mouseenter / touchstart)
+
+when the user hovers over (or touches) the ask button, `AskButton.svelte` calls `recorder.warmUp()`. this is fire-and-forget:
+
+```
+user hovers ask button → AskButton calls recorder.warmUp()
+                          ├── if stream dead: getUserMedia() → stores this.stream
+                          └── new MediaRecorder(stream) → stores this.warmRecorder
+```
+
+if the user leaves without clicking, `recorder.releaseWarmStream()` stops the tracks and nulls both stream and warm recorder.
+
+#### phase 3: instant start (on pointerdown)
+
+when the user presses the ask button, `startRecording()` checks for a warm recorder:
+
+```
+user presses ask → AskButton calls recorder.startRecording()
+                    ├── warm path: move this.warmRecorder → this.mediaRecorder, call .start()
+                    │   (~1-5ms, near-instant)
+                    │
+                    └── cold fallback: getUserMedia() + new MediaRecorder() + .start()
+                        (~800-1500ms, only if warm-up didn't happen)
+```
+
+#### recorder lifecycle
+
+```
+                    acquireStream()          warmUp()            startRecording()
+                    (first play)             (hover)             (press)
+                         │                      │                     │
+                         ▼                      ▼                     ▼
+                    ┌─────────┐          ┌─────────────┐       ┌───────────┐
+                    │ stream  │ ──reuse→ │ stream +    │ ─move→│ recording │
+                    │ alive   │          │ warmRecorder│       │ active    │
+                    └─────────┘          └─────────────┘       └───────────┘
+                                               │                     │
+                                          mouseleave            stopRecording()
+                                               │                     │
+                                               ▼                     ▼
+                                        releaseWarmStream()    blob returned
+                                        (stops tracks)         (stream kept alive)
+```
+
+#### recording format
+
+- format: `audio/webm;codecs=opus`
+- output: `Blob` converted to base64 via `blobToBase64()` (FileReader API)
+- sent to server as `audio_base64` field in POST /api/ask json body
+- server decodes base64 → buffer → openai `toFile()` → whisper api
+
+#### edge cases
+
+| scenario | behavior |
+|----------|----------|
+| stream dies between recordings | `isStreamAlive()` checks track `readyState === 'live'`; falls back to `getUserMedia()` |
+| hover without clicking | `releaseWarmStream()` on pointerleave stops tracks |
+| pointer leaves during recording | `cancelRecording()` stops recorder, keeps stream alive |
+| page destroy / navigation | `releaseStream()` stops all tracks, nulls everything |
+| mic permission denied | caught in `handlePointerDown()`, sets qa error state |
+| warm-up fails silently | `warmUp()` is fire-and-forget; `startRecording()` falls back to cold path |
+
+#### file ownership
+
+| file | role |
+|------|------|
+| `$lib/services/recorder.ts` | `Recorder` class: stream lifecycle, mediarecorder management, blob output |
+| `$lib/components/qa/AskButton.svelte` | ui component: hover warm-up, press-to-record, release-to-send |
+| `$lib/components/player/Player.svelte` | owns the `Recorder` instance, calls `acquireStream()` on first play, `releaseStream()` on destroy |
 
 ---
 

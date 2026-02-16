@@ -6,6 +6,7 @@
 	import AskButton from '$lib/components/qa/AskButton.svelte';
 	import { playback, savePosition, loadSavedPosition } from '$lib/stores/playback';
 	import { AudioEngine } from '$lib/services/audio';
+	import { Recorder } from '$lib/services/recorder';
 	import { onMount, onDestroy } from 'svelte';
 	import { get } from 'svelte/store';
 
@@ -15,6 +16,8 @@
 	let engine: AudioEngine | null = null;
 	let saveInterval: ReturnType<typeof setInterval> | null = null;
 	let currentChapterId: string | null = null;
+	const recorder = new Recorder();
+	let streamAcquired = false;
 
 	// Track previous store values to detect changes
 	let prevChunkIndex = 0;
@@ -143,6 +146,14 @@
 		// React to play/pause changes
 		if (state.is_playing !== prevIsPlaying) {
 			if (state.is_playing) {
+				// Acquire mic stream on first play (user gesture satisfies browser requirement)
+				if (!streamAcquired) {
+					streamAcquired = true;
+					recorder.acquireStream().catch((e) => {
+						console.warn('[player] Mic stream acquire failed (non-blocking):', e);
+					});
+				}
+
 				if (engine.getCurrentTimeMs() === 0 && prevChunkIndex === state.chunk_index) {
 					const seekMs = restoredSeekMs ?? undefined;
 					restoredSeekMs = null;
@@ -172,6 +183,7 @@
 		savePosition();
 		engine?.destroy();
 		engine = null;
+		recorder.releaseStream();
 		window.removeEventListener('beforeunload', handleBeforeUnload);
 	});
 </script>
@@ -207,6 +219,7 @@
 	<div class="flex justify-center">
 		<AskButton
 			bookId={loadedBook.book.book_id}
+			{recorder}
 			onAnswerComplete={() => playback.play()}
 		/>
 	</div>
