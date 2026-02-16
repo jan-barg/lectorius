@@ -205,7 +205,10 @@
 
 	<!-- Ask button -->
 	<div class="flex justify-center">
-		<AskButton />
+		<AskButton
+			bookId={loadedBook.book.book_id}
+			onAnswerComplete={() => playback.play()}
+		/>
 	</div>
 
 	<!-- Chapter list -->
