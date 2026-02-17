@@ -5,7 +5,8 @@ from pathlib import Path
 
 from lectorius_pipeline.config import PipelineConfig
 from lectorius_pipeline.errors import ValidationFailedError
-from lectorius_pipeline.schemas import Chunk, Manifest, ValidateReport
+from lectorius_pipeline.schemas import Chunk, ValidateReport
+from lectorius_pipeline.utils.io import load_chunks, update_manifest
 
 from .checks import validate_chunks
 
@@ -32,7 +33,7 @@ def run_validate(output_dir: Path, book_id: str, config: PipelineConfig) -> Vali
     logger.info("Starting validate stage for %s", book_id)
 
     # Load chunks
-    chunks = _load_chunks(output_dir)
+    chunks = load_chunks(output_dir)
     logger.info("Loaded %d chunks for validation", len(chunks))
 
     # Run validation
@@ -54,7 +55,8 @@ def run_validate(output_dir: Path, book_id: str, config: PipelineConfig) -> Vali
     success = error_count == 0
 
     # Update manifest
-    _update_manifest(output_dir, success)
+    if success:
+        update_manifest(output_dir, "validate")
 
     report = ValidateReport(
         success=success,
@@ -72,27 +74,6 @@ def run_validate(output_dir: Path, book_id: str, config: PipelineConfig) -> Vali
     logger.info("Validate stage completed successfully")
     return report
 
-
-def _load_chunks(output_dir: Path) -> list[Chunk]:
-    """Load chunks from chunks.jsonl."""
-    path = output_dir / "chunks.jsonl"
-    chunks: list[Chunk] = []
-    for line in path.read_text(encoding="utf-8").strip().split("\n"):
-        if line:
-            chunks.append(Chunk.model_validate_json(line))
-    return chunks
-
-
-def _update_manifest(output_dir: Path, success: bool) -> None:
-    """Update manifest.json with validate stage."""
-    path = output_dir / "manifest.json"
-    manifest = Manifest.model_validate_json(path.read_text())
-
-    if success and "validate" not in manifest.stages_completed:
-        manifest.stages_completed.append("validate")
-
-    path.write_text(manifest.model_dump_json(indent=2), encoding="utf-8")
-    logger.debug("Updated %s", path)
 
 
 def _write_report(reports_dir: Path, report: ValidateReport) -> None:

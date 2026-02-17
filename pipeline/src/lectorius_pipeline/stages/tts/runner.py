@@ -10,6 +10,7 @@ from mutagen.mp3 import MP3
 
 from lectorius_pipeline.errors import AudioWriteError, TTSError, TTSProviderError
 from lectorius_pipeline.schemas import Chunk, PlaybackMapEntry, TTSReport
+from lectorius_pipeline.utils.io import load_chunks
 
 from .progress import TTSProgress
 from .providers.base import TTSProvider
@@ -51,7 +52,7 @@ def run_tts(
     logger.info("Starting TTS stage for %s (provider=%s)", book_id, provider_name)
 
     # Load chunks
-    chunks = _load_chunks(book_dir)
+    chunks = load_chunks(book_dir, TTSError)
     logger.info("Loaded %d chunks for TTS", len(chunks))
 
     # Create provider
@@ -118,24 +119,6 @@ def run_tts(
 
     return report
 
-
-def _load_chunks(book_dir: Path) -> list[Chunk]:
-    """Load chunks from chunks.jsonl."""
-    chunks_path = book_dir / "chunks.jsonl"
-    if not chunks_path.exists():
-        raise TTSError(f"chunks.jsonl not found in {book_dir}")
-
-    chunks: list[Chunk] = []
-    with open(chunks_path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                chunks.append(Chunk.model_validate_json(line))
-
-    if not chunks:
-        raise TTSError("chunks.jsonl is empty")
-
-    return chunks
 
 
 def _create_provider(

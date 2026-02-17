@@ -7,8 +7,9 @@ from pathlib import Path
 
 from anthropic import Anthropic
 
-from lectorius_pipeline.errors import CheckpointGenerationError, MemoryError_
+from lectorius_pipeline.errors import CheckpointGenerationError, MemoryStageError
 from lectorius_pipeline.schemas import Chunk, MemoryReport
+from lectorius_pipeline.utils.io import load_chunks
 
 from .prompts import CHECKPOINT_PROMPT
 
@@ -36,19 +37,19 @@ def run_memory(
         MemoryReport with processing stats.
 
     Raises:
-        MemoryError_: If the stage fails critically.
+        MemoryStageError: If the stage fails critically.
     """
     logger.info("Starting Memory stage for %s", book_id)
 
     # Load chunks
-    chunks = _load_chunks(book_dir)
+    chunks = load_chunks(book_dir, MemoryStageError)
     total = len(chunks)
     logger.info("Loaded %d chunks for memory generation", total)
 
     # Create Anthropic client
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise MemoryError_("ANTHROPIC_API_KEY environment variable not set")
+        raise MemoryStageError("ANTHROPIC_API_KEY environment variable not set")
 
     client = Anthropic(api_key=api_key)
     llm_model = model or DEFAULT_MODEL
@@ -202,20 +203,3 @@ def _call_llm(client: Anthropic, model: str, prompt: str) -> dict:
     return data
 
 
-def _load_chunks(book_dir: Path) -> list[Chunk]:
-    """Load chunks from chunks.jsonl."""
-    chunks_path = book_dir / "chunks.jsonl"
-    if not chunks_path.exists():
-        raise MemoryError_(f"chunks.jsonl not found in {book_dir}")
-
-    chunks: list[Chunk] = []
-    with open(chunks_path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                chunks.append(Chunk.model_validate_json(line))
-
-    if not chunks:
-        raise MemoryError_("chunks.jsonl is empty")
-
-    return chunks

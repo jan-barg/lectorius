@@ -4,7 +4,9 @@ interactive audiobook app that answers your questions without spoilers
 
 ## status
 
-work in progress — pipeline (all stages 1-7) is functional, tested on gutenberg epubs.
+work in progress 
+— pipeline (all stages 1-7) is functional, tested on gutenberg epubs.
+- audio playback works, Q&A flow functional
 
 ## structure
 ```

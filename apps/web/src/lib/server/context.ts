@@ -9,15 +9,18 @@ export function getRecentChunks(
 	currentChunkIndex: number,
 	targetDurationMs: number = 60000
 ): Chunk[] {
+	const chunkByIndex = new Map(chunks.map((c) => [c.chunk_index, c]));
+	const durationByIndex = new Map(playbackMap.map((p) => [p.chunk_index, p.duration_ms]));
+
 	const result: Chunk[] = [];
 	let totalDuration = 0;
 
 	for (let i = currentChunkIndex; i >= 1 && totalDuration < targetDurationMs; i--) {
-		const entry = playbackMap.find((p) => p.chunk_index === i);
-		const chunk = chunks.find((c) => c.chunk_index === i);
-		if (entry && chunk) {
+		const duration = durationByIndex.get(i);
+		const chunk = chunkByIndex.get(i);
+		if (duration !== undefined && chunk) {
 			result.unshift(chunk);
-			totalDuration += entry.duration_ms;
+			totalDuration += duration;
 		}
 	}
 	return result;

@@ -119,14 +119,14 @@ class EmbeddingError(RAGError):
     pass
 
 
-class MemoryError_(PipelineError):
+class MemoryStageError(PipelineError):
     """Error during memory stage."""
 
     def __init__(self, message: str) -> None:
         super().__init__(message, stage="memory")
 
 
-class CheckpointGenerationError(MemoryError_):
+class CheckpointGenerationError(MemoryStageError):
     """Failed to generate a memory checkpoint."""
 
     pass

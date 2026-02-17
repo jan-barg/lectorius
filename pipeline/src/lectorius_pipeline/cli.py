@@ -17,10 +17,11 @@ from lectorius_pipeline.stages.rag import run_rag
 from lectorius_pipeline.stages.tts import run_tts
 from lectorius_pipeline.stages.validate import run_validate
 
-# Stage order
-STAGES = ["ingest", "chapterize", "chunkify", "validate"]
+# Core text-processing stages (used by the `process` command).
+# TTS, RAG, and Memory are separate commands — see below.
+TEXT_STAGES = ["ingest", "chapterize", "chunkify", "validate"]
 
-StageType = Literal["ingest", "chapterize", "chunkify", "validate"]
+TextStageType = Literal["ingest", "chapterize", "chunkify", "validate"]
 
 
 def setup_logging(verbose: bool) -> None:
@@ -61,13 +62,13 @@ def main() -> None:
 )
 @click.option(
     "--stop-after",
-    type=click.Choice(STAGES),
+    type=click.Choice(TEXT_STAGES),
     default=None,
     help="Stop after this stage",
 )
 @click.option(
     "--from-stage",
-    type=click.Choice(STAGES),
+    type=click.Choice(TEXT_STAGES),
     default=None,
     help="Start from this stage (requires existing outputs)",
 )
@@ -98,9 +99,9 @@ def process(
     config = PipelineConfig(llm_assist=llm_assist) if llm_assist else DEFAULT_CONFIG
 
     # Determine which stages to run
-    start_idx = STAGES.index(from_stage) if from_stage else 0
-    end_idx = STAGES.index(stop_after) + 1 if stop_after else len(STAGES)
-    stages_to_run = STAGES[start_idx:end_idx]
+    start_idx = TEXT_STAGES.index(from_stage) if from_stage else 0
+    end_idx = TEXT_STAGES.index(stop_after) + 1 if stop_after else len(TEXT_STAGES)
+    stages_to_run = TEXT_STAGES[start_idx:end_idx]
 
     logger.info("Processing %s through stages: %s", book_id, ", ".join(stages_to_run))
 

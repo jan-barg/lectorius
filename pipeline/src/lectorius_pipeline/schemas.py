@@ -1,6 +1,6 @@
 """Pydantic schemas for pipeline data models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -45,8 +45,8 @@ class Manifest(BaseModel):
 
     book_id: str
     version: int = 1
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     pipeline_version: str = "1.0.0"
     stages_completed: list[str] = Field(default_factory=list)
     config: ManifestConfig = Field(default_factory=ManifestConfig)

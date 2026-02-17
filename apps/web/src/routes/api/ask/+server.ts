@@ -1,32 +1,13 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import OpenAI, { toFile } from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
+import { toFile } from 'openai';
 import { env } from '$env/dynamic/private';
+import { getOpenAI, getAnthropic } from '$lib/server/clients';
 import { getBookDetail } from '$lib/server/storage';
 import type { BookMeta, Chapter, Chunk, PlaybackMapEntry, MemoryCheckpoint } from '$lib/types';
 import { getRecentChunks, getCurrentCheckpoint } from '$lib/server/context';
 import { queryRAG } from '$lib/server/rag';
 import { buildSystemPrompt, buildUserMessage, shouldUseRAG } from '$lib/server/prompts';
-
-let openai: OpenAI | null = null;
-let anthropic: Anthropic | null = null;
-
-function getOpenAI(): OpenAI {
-	if (!openai) {
-		if (!env.OPENAI_API_KEY) throw new Error('Missing OPENAI_API_KEY');
-		openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-	}
-	return openai;
-}
-
-function getAnthropic(): Anthropic {
-	if (!anthropic) {
-		if (!env.ANTHROPIC_API_KEY) throw new Error('Missing ANTHROPIC_API_KEY');
-		anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-	}
-	return anthropic;
-}
 
 function fallbackUrl(id: string): string {
 	return `${env.SUPABASE_URL}/storage/v1/object/public/system/audio/${id}.mp3`;

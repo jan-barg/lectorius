@@ -11,6 +11,7 @@ from supabase import create_client
 
 from lectorius_pipeline.errors import RAGError
 from lectorius_pipeline.schemas import Chunk, RAGMeta, RAGReport
+from lectorius_pipeline.utils.io import load_chunks
 
 from .embedder import Embedder
 
@@ -40,7 +41,7 @@ def run_rag(
     logger.info("Starting RAG stage for %s", book_id)
 
     # Load chunks
-    chunks = _load_chunks(book_dir)
+    chunks = load_chunks(book_dir, RAGError)
     logger.info("Loaded %d chunks for embedding", len(chunks))
 
     # Create embedder
@@ -148,20 +149,3 @@ def run_rag(
     return report
 
 
-def _load_chunks(book_dir: Path) -> list[Chunk]:
-    """Load chunks from chunks.jsonl."""
-    chunks_path = book_dir / "chunks.jsonl"
-    if not chunks_path.exists():
-        raise RAGError(f"chunks.jsonl not found in {book_dir}")
-
-    chunks: list[Chunk] = []
-    with open(chunks_path) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                chunks.append(Chunk.model_validate_json(line))
-
-    if not chunks:
-        raise RAGError("chunks.jsonl is empty")
-
-    return chunks
