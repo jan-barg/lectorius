@@ -4,10 +4,12 @@
 	import { type Recorder, blobToBase64 } from '$lib/services/recorder';
 	import { get } from 'svelte/store';
 	import { onDestroy } from 'svelte';
+	import type { LoadedBook } from '$lib/types';
 
 	export let bookId: string;
 	export let onAnswerComplete: () => void;
 	export let recorder: Recorder;
+	export let loadedBook: LoadedBook;
 	let answerAudio: HTMLAudioElement | null = null;
 
 	let isRecording = false;
@@ -64,7 +66,12 @@
 					book_id: bookId,
 					chunk_index: state.chunk_index,
 					chunk_time_ms: state.chunk_time_ms,
-					audio_base64
+					audio_base64,
+					book: loadedBook.book,
+					chapters: loadedBook.chapters,
+					chunks: loadedBook.chunks,
+					playback_map: loadedBook.playbackMap,
+					checkpoints: loadedBook.checkpoints
 				})
 			});
 			console.log(`[qa] API response received: ${Date.now() - t0}ms`);

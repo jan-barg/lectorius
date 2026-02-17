@@ -4,6 +4,7 @@ import OpenAI, { toFile } from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import { getBookDetail } from '$lib/server/storage';
+import type { BookMeta, Chapter, Chunk, PlaybackMapEntry, MemoryCheckpoint } from '$lib/types';
 import { getRecentChunks, getCurrentCheckpoint } from '$lib/server/context';
 import { queryRAG } from '$lib/server/rag';
 import { buildSystemPrompt, buildUserMessage, shouldUseRAG } from '$lib/server/prompts';
@@ -49,20 +50,26 @@ export const POST: RequestHandler = async ({ request }) => {
 			);
 		}
 
-		// 2. LOAD BOOK DATA
+		// 2. LOAD BOOK DATA (prefer client-provided data, fallback to fetch)
 		let t = Date.now();
-		let bookData;
-		try {
-			bookData = await getBookDetail(book_id);
-		} catch {
-			return json(
-				{ success: false, error: 'Book not found', fallback_audio_url: fallbackUrl('error') },
-				{ status: 404 }
-			);
+		let book: BookMeta, chapters: Chapter[], chunks: Chunk[], playback_map: PlaybackMapEntry[], checkpoints: MemoryCheckpoint[];
+
+		if (body.book && body.chapters && body.chunks && body.playback_map && body.checkpoints) {
+			({ book, chapters, chunks, playback_map, checkpoints } = body);
+			console.log(`[ask] Using client-provided book data (skipped fetch)`);
+		} else {
+			try {
+				const bookData = await getBookDetail(book_id);
+				({ book, chapters, chunks, playback_map, checkpoints } = bookData);
+				console.log(`[ask] Fetched book data from storage (fallback)`);
+			} catch {
+				return json(
+					{ success: false, error: 'Book not found', fallback_audio_url: fallbackUrl('error') },
+					{ status: 404 }
+				);
+			}
 		}
 		timings['2_load_book'] = Date.now() - t;
-
-		const { book, chunks, playback_map, checkpoints, chapters } = bookData;
 		const totalChunks = chunks.length;
 
 		if (chunk_index < 1 || chunk_index > totalChunks) {

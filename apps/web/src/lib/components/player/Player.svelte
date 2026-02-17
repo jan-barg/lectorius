@@ -220,6 +220,7 @@
 		<AskButton
 			bookId={loadedBook.book.book_id}
 			{recorder}
+			{loadedBook}
 			onAnswerComplete={() => playback.play()}
 		/>
 	</div>
