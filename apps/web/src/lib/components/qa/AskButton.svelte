@@ -4,12 +4,11 @@
 	import { type Recorder, blobToBase64 } from '$lib/services/recorder';
 	import { get } from 'svelte/store';
 	import { onDestroy } from 'svelte';
-	import type { LoadedBook } from '$lib/types';
+	import { browser } from '$app/environment';
 
 	export let bookId: string;
 	export let onAnswerComplete: () => void;
 	export let recorder: Recorder;
-	export let loadedBook: LoadedBook;
 
 	let answerAudio: HTMLAudioElement | null = null;
 	let audioQueue: string[] = [];
@@ -105,19 +104,14 @@
 			const state = get(playback);
 
 			abortController = new AbortController();
-			const response = await fetch('/api/ask-stream', {
+			const response = await fetch('/api/ask', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					book_id: bookId,
 					chunk_index: state.chunk_index,
 					chunk_time_ms: state.chunk_time_ms,
-					audio_base64,
-					book: loadedBook.book,
-					chapters: loadedBook.chapters,
-					chunks: loadedBook.chunks,
-					playback_map: loadedBook.playbackMap,
-					checkpoints: loadedBook.checkpoints
+					audio_base64
 				}),
 				signal: abortController.signal
 			});
@@ -228,12 +222,12 @@
 	}
 
 	function handleMouseEnter() {
-		if (isProcessing || isPlayingAnswer) return;
+		if (!browser || isProcessing || isPlayingAnswer) return;
 		recorder.warmUp();
 	}
 
 	function handleTouchStart() {
-		if (isProcessing || isPlayingAnswer) return;
+		if (!browser || isProcessing || isPlayingAnswer) return;
 		recorder.warmUp();
 	}
 
