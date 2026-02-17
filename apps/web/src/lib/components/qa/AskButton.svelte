@@ -10,7 +10,14 @@
 	export let onAnswerComplete: () => void;
 	export let recorder: Recorder;
 	export let loadedBook: LoadedBook;
+
 	let answerAudio: HTMLAudioElement | null = null;
+	let audioQueue: string[] = [];
+	let isPlayingAudio = false;
+	let streamDone = false;
+	let abortController: AbortController | null = null;
+	let requestStartTime = 0;
+	let firstAudioPlayed = false;
 
 	let isRecording = false;
 	let isProcessing = false;
@@ -21,6 +28,42 @@
 		isProcessing = s.is_processing;
 		isPlayingAnswer = s.is_playing_answer;
 	});
+
+	function playNextAudio() {
+		if (audioQueue.length === 0) {
+			isPlayingAudio = false;
+			checkComplete();
+			return;
+		}
+
+		isPlayingAudio = true;
+		const audioBase64 = audioQueue.shift()!;
+		answerAudio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+		answerAudio.onplay = () => {
+			if (!firstAudioPlayed) {
+				console.log(`[qa] TIME TO FIRST AUDIO: ${Date.now() - requestStartTime}ms`);
+				firstAudioPlayed = true;
+			}
+		};
+		answerAudio.onended = playNextAudio;
+		answerAudio.onerror = () => {
+			console.error('[audio] Playback error');
+			playNextAudio();
+		};
+		answerAudio.play().catch((e) => {
+			console.error('[audio] Play failed:', e);
+			playNextAudio();
+		});
+	}
+
+	function checkComplete() {
+		if (streamDone && !isPlayingAudio && audioQueue.length === 0) {
+			setTimeout(() => {
+				qa.reset();
+				onAnswerComplete();
+			}, 2000);
+		}
+	}
 
 	async function handlePointerDown() {
 		if (isRecording || isProcessing || isPlayingAnswer) return;
@@ -45,7 +88,9 @@
 	async function handlePointerUp() {
 		if (!isRecording) return;
 
-		const t0 = Date.now();
+		requestStartTime = Date.now();
+		firstAudioPlayed = false;
+		const t0 = requestStartTime;
 		console.log(`[qa] Button released`);
 
 		try {
@@ -59,7 +104,8 @@
 
 			const state = get(playback);
 
-			const response = await fetch('/api/ask', {
+			abortController = new AbortController();
+			const response = await fetch('/api/ask-stream', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
@@ -72,37 +118,106 @@
 					chunks: loadedBook.chunks,
 					playback_map: loadedBook.playbackMap,
 					checkpoints: loadedBook.checkpoints
-				})
+				}),
+				signal: abortController.signal
 			});
-			console.log(`[qa] API response received: ${Date.now() - t0}ms`);
+			console.log(`[qa] Stream response received: ${Date.now() - t0}ms`);
 
-			const data = await response.json();
-			console.log(`[qa] JSON parsed: ${Date.now() - t0}ms`);
-
-			if (data.success) {
-				qa.setAnswer(data.question_text, data.answer_text);
-				playResponseAudio(`data:audio/mp3;base64,${data.answer_audio}`);
-				console.log(`[qa] Audio playback started: ${Date.now() - t0}ms`);
-			} else {
-				qa.setError(data.error || 'Something went wrong');
-				if (data.fallback_audio_url) {
-					playResponseAudio(data.fallback_audio_url);
-				} else {
-					resumeAfterDelay();
-				}
-			}
+			await handleStreamingResponse(response);
 		} catch (e) {
+			if (e instanceof DOMException && e.name === 'AbortError') return;
 			console.error('Q&A failed:', e);
 			qa.setError('Something went wrong');
 			resumeAfterDelay();
 		}
 	}
 
-	function playResponseAudio(src: string) {
-		answerAudio = new Audio(src);
+	async function handleStreamingResponse(response: Response) {
+		if (!response.body) {
+			throw new Error('No response body');
+		}
+
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder();
+		let sseBuffer = '';
+		let questionText = '';
+		let firstAudioReceived = false;
+
+		audioQueue = [];
+		isPlayingAudio = false;
+		streamDone = false;
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				sseBuffer += decoder.decode(value, { stream: true });
+				const lines = sseBuffer.split('\n\n');
+				sseBuffer = lines.pop() || '';
+
+				for (const line of lines) {
+					if (!line.startsWith('data: ')) continue;
+
+					const data = JSON.parse(line.slice(6));
+
+					if (data.type === 'question') {
+						questionText = data.text;
+						console.log(`[stream] Question: ${data.text}`);
+					}
+
+					if (data.type === 'audio') {
+						console.log(`[stream] Audio chunk: "${data.text.substring(0, 30)}..."`);
+						audioQueue.push(data.audio);
+
+						if (!firstAudioReceived) {
+							firstAudioReceived = true;
+							qa.setAnswer(questionText, '');
+						}
+
+						if (!isPlayingAudio) {
+							playNextAudio();
+						}
+					}
+
+					if (data.type === 'done') {
+						console.log(`[stream] Stream complete`);
+						streamDone = true;
+						checkComplete();
+					}
+
+					if (data.type === 'error') {
+						console.error('[stream] Error:', data.error);
+						if (data.fallback_audio_url) {
+							playFallbackAudio(data.fallback_audio_url);
+						} else {
+							qa.setError(data.error || 'Something went wrong');
+							resumeAfterDelay();
+						}
+						return;
+					}
+				}
+			}
+
+			// If stream ended without explicit 'done' event
+			if (!streamDone) {
+				streamDone = true;
+				checkComplete();
+			}
+		} catch (e) {
+			if (e instanceof DOMException && e.name === 'AbortError') return;
+			console.error('[stream] Parse error:', e);
+			qa.setError('Something went wrong');
+			resumeAfterDelay();
+		}
+	}
+
+	function playFallbackAudio(url: string) {
+		qa.setError('Something went wrong');
+		answerAudio = new Audio(url);
 		answerAudio.onended = () => resumeAfterDelay();
 		answerAudio.onerror = () => resumeAfterDelay();
-		answerAudio.play();
+		answerAudio.play().catch(() => resumeAfterDelay());
 	}
 
 	function resumeAfterDelay() {
@@ -134,8 +249,8 @@
 
 	onDestroy(() => {
 		unsub();
+		abortController?.abort();
 		recorder.cancelRecording();
-		// Don't releaseStream here — Player owns the stream lifecycle
 		answerAudio?.pause();
 		answerAudio = null;
 	});
