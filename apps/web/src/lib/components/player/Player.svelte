@@ -5,6 +5,7 @@
 	import ChapterList from './ChapterList.svelte';
 	import AskButton from '$lib/components/qa/AskButton.svelte';
 	import { playback, savePosition, loadSavedPosition } from '$lib/stores/playback';
+	import { updateReadingHistory } from '$lib/stores/reading-history';
 	import { AudioEngine } from '$lib/services/audio';
 	import { Recorder } from '$lib/services/recorder';
 	import { onMount, onDestroy } from 'svelte';
@@ -93,9 +94,17 @@
 		engine?.play(chunkIndex);
 	}
 
+	function saveAll() {
+		savePosition();
+		const state = get(playback);
+		if (state.book_id) {
+			updateReadingHistory(state.book_id, state.chunk_index, totalChunks);
+		}
+	}
+
 	function startSaveInterval() {
 		stopSaveInterval();
-		saveInterval = setInterval(savePosition, 5000);
+		saveInterval = setInterval(saveAll, 5000);
 	}
 
 	function stopSaveInterval() {
@@ -106,7 +115,7 @@
 	}
 
 	function handleBeforeUnload() {
-		savePosition();
+		saveAll();
 	}
 
 	onMount(() => {
@@ -117,6 +126,13 @@
 			playback.setChunkTime(saved.chunk_time_ms);
 			restoredSeekMs = saved.chunk_time_ms;
 		}
+
+		// Record that this book has been opened
+		updateReadingHistory(
+			loadedBook.book.book_id,
+			saved?.chunk_index ?? 1,
+			totalChunks
+		);
 
 		engine = new AudioEngine(loadedBook.playbackMap, {
 			onChunkEnd: handleChunkEnd,
@@ -180,7 +196,7 @@
 	onDestroy(() => {
 		unsub();
 		stopSaveInterval();
-		savePosition();
+		saveAll();
 		engine?.destroy();
 		engine = null;
 		recorder.releaseStream();

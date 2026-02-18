@@ -1,7 +1,12 @@
 <script lang="ts">
 	import type { BookListItem } from '$lib/types';
+	import BookCardVideo from './BookCardVideo.svelte';
+	import ProgressOverlay from './ProgressOverlay.svelte';
 
 	export let book: BookListItem;
+	export let progress: number | null = null;
+
+	let hovering = false;
 
 	function formatDuration(ms: number): string {
 		const hours = Math.floor(ms / 3600000);
@@ -13,29 +18,38 @@
 
 <a
 	href="/book/{book.book_id}"
-	class="block rounded-xl bg-surface p-6 transition-all hover:ring-2 hover:ring-primary/50 hover:scale-[1.02]"
+	class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-primary/50"
+	on:mouseenter={() => (hovering = true)}
+	on:mouseleave={() => (hovering = false)}
 >
-	<div class="mb-4 flex h-48 items-center justify-center rounded-lg bg-background">
-		{#if book.cover_url}
-			<img src={book.cover_url} alt={book.title} class="h-full w-auto rounded-lg object-cover" />
-		{:else}
-			<div class="text-center">
-				<div class="text-4xl font-bold text-primary/30">
-					{book.title.charAt(0)}
-				</div>
-			</div>
+	<!-- Cover area -->
+	<div class="relative aspect-[3/4] overflow-hidden">
+		<BookCardVideo
+			src={book.cover_video_url}
+			{hovering}
+			fallbackChar={book.title.charAt(0)}
+		/>
+
+		<!-- Gradient overlay with metadata -->
+		<div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
+			<h3 class="text-sm font-semibold text-white">{book.title}</h3>
+			{#if book.author}
+				<p class="mt-0.5 text-xs text-white/70">{book.author}</p>
+			{/if}
+		</div>
+
+		<!-- Progress bar -->
+		{#if progress !== null}
+			<ProgressOverlay percentage={progress} />
 		{/if}
 	</div>
 
-	<h3 class="text-lg font-semibold text-text">{book.title}</h3>
-
-	{#if book.author}
-		<p class="mt-1 text-sm text-muted">{book.author}</p>
-	{/if}
-
-	<div class="mt-3 flex items-center gap-3 text-xs text-muted">
-		<span>{book.total_chapters} chapters</span>
-		<span class="text-muted/50">|</span>
-		<span>{formatDuration(book.total_duration_ms)}</span>
+	<!-- Info below cover -->
+	<div class="px-3 py-2">
+		<div class="flex items-center gap-2 text-xs text-muted">
+			<span>{book.total_chapters} chapters</span>
+			<span class="text-muted/50">|</span>
+			<span>{formatDuration(book.total_duration_ms)}</span>
+		</div>
 	</div>
 </a>

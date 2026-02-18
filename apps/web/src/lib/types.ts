@@ -164,7 +164,9 @@ export interface BookListItem {
 	title: string;
 	author: string | null;
 	cover_url: string | null;
+	cover_video_url: string | null;
 	total_chapters: number;
+	total_chunks: number;
 	total_duration_ms: number;
 }
 

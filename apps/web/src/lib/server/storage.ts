@@ -60,12 +60,15 @@ export async function listBooks(): Promise<BookListItem[]> {
 				downloadJson<BookMeta>(`${folder.name}/book.json`),
 				downloadJson<Manifest>(`${folder.name}/manifest.json`)
 			]);
+			const storageBase = `${env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}`;
 			return {
 				book_id: bookMeta.book_id,
 				title: bookMeta.title,
 				author: bookMeta.author,
 				cover_url: null,
+				cover_video_url: `${storageBase}/${bookMeta.book_id}/cover.mp4`,
 				total_chapters: manifest.stats.chapters,
+				total_chunks: manifest.stats.chunks,
 				total_duration_ms: manifest.stats.total_audio_duration_ms
 			};
 		})

@@ -6,7 +6,9 @@ export const MOCK_BOOKS: BookListItem[] = [
 		title: 'The Great Gatsby',
 		author: 'F. Scott Fitzgerald',
 		cover_url: null,
+		cover_video_url: null,
 		total_chapters: 9,
+		total_chunks: 90,
 		total_duration_ms: 32400000
 	},
 	{
@@ -14,7 +16,9 @@ export const MOCK_BOOKS: BookListItem[] = [
 		title: 'Rip Van Winkle',
 		author: 'Washington Irving',
 		cover_url: null,
+		cover_video_url: null,
 		total_chapters: 3,
+		total_chunks: 30,
 		total_duration_ms: 2640000
 	},
 	{
@@ -22,7 +26,9 @@ export const MOCK_BOOKS: BookListItem[] = [
 		title: 'The Yellow Wallpaper',
 		author: 'Charlotte Perkins Gilman',
 		cover_url: null,
+		cover_video_url: null,
 		total_chapters: 1,
+		total_chunks: 10,
 		total_duration_ms: 1920000
 	}
 ];
