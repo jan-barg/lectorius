@@ -44,18 +44,53 @@ html {
 }
 
 @keyframes spin-border {
-	from { --angle: 0deg; }
-	to { --angle: 360deg; }
+	from {
+		--angle: 0deg;
+	}
+
+	to {
+		--angle: 360deg;
+	}
 }
 
 @keyframes breathe {
-	0%, 100% { transform: scale(1); }
-	50% { transform: scale(1.05); }
+
+	0%,
+	100% {
+		transform: scale(1);
+	}
+
+	50% {
+		transform: scale(1.05);
+	}
 }
 
 @keyframes gentle-pulse {
-	0%, 100% { opacity: 1; }
-	50% { opacity: 0.85; }
+
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.85;
+	}
+}
+
+@keyframes ambient-drift {
+
+	0%,
+	100% {
+		transform: translate(0, 0) rotate(0deg);
+	}
+
+	33% {
+		transform: translate(2%, 3%) rotate(2deg);
+	}
+
+	66% {
+		transform: translate(-2%, 1%) rotate(-1deg);
+	}
 }
 
 .animate-spin-border {
@@ -63,9 +98,13 @@ html {
 }
 
 .animate-breathe {
-	animation: breathe 1.5s ease-in-out infinite;
+	animation: breathe 6s ease-in-out infinite;
 }
 
 .animate-gentle-pulse {
 	animation: gentle-pulse 2.5s ease-in-out infinite;
+}
+
+.animate-ambient-drift {
+	animation: ambient-drift 20s ease-in-out infinite;
 }

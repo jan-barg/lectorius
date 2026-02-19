@@ -51,3 +51,6 @@ agents/
 CLAUDE.md
 
 docs/streaming-implement.md
+docs/components-list.md
+docs/frontend-design-spec.md
+docs/UI-overhaul.md

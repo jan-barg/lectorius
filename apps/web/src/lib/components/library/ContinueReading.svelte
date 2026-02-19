@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { BookListItem } from '$lib/types';
-	import type { ReadingHistoryEntry } from '$lib/stores/reading-history';
-	import BookCard from './BookCard.svelte';
+	import type { BookListItem } from "$lib/types";
+	import type { ReadingHistoryEntry } from "$lib/stores/reading-history";
+	import BookCard from "./BookCard.svelte";
 
 	export let books: BookListItem[];
 	export let history: ReadingHistoryEntry[];
@@ -23,27 +23,21 @@
 			<h2 class="text-2xl font-bold text-text">Continue Reading</h2>
 		</div>
 
-		<div class="-mx-2 -mt-4 flex flex-nowrap gap-6 overflow-x-auto px-2 pt-4 pb-8 snap-x snap-mandatory scroll-smooth">
+		<div
+			class="flex flex-row overflow-x-auto snap-x snap-mandatory gap-6 pb-12 pt-4 px-4 -mx-4 hide-scrollbar"
+		>
 			{#each sortedBooks as book (book.book_id)}
 				{@const entry = historyMap.get(book.book_id)}
-				<div class="w-44 flex-shrink-0 snap-start sm:w-52">
+				<div class="flex-shrink-0 snap-start">
 					<BookCard
 						{book}
-						progress={entry ? (entry.last_chunk_index / entry.total_chunks) * 100 : null}
+						progress={entry
+							? (entry.last_chunk_index / entry.total_chunks) *
+								100
+							: null}
 					/>
 				</div>
 			{/each}
-			<div class="w-2 flex-shrink-0"></div>
 		</div>
 	</section>
 {/if}
-
-<style>
-	.overflow-x-auto::-webkit-scrollbar {
-		display: none;
-	}
-	.overflow-x-auto {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
-</style>
