@@ -40,6 +40,7 @@ class BookMeta(BaseModel):
     book_type: Literal["fiction", "non-fiction", "biography"]
     source: str | None
     source_id: str | None
+    status: Literal["available", "coming_soon"] = "available"
 
 # =============================================================================
 # manifest
@@ -195,6 +196,7 @@ export interface BookMeta {
   book_type: 'fiction' | 'non-fiction' | 'biography';
   source: string | null;
   source_id: string | null;
+  status?: 'available' | 'coming_soon';  // defaults to 'available'
 }
 
 // =============================================================================
@@ -333,11 +335,11 @@ export interface MemoryCheckpoint {
 
 export interface LoadedBook {
   book: BookMeta;
-  manifest: Manifest;
   chapters: Chapter[];
   chunks: Chunk[];
   playbackMap: PlaybackMapEntry[];
   checkpoints: MemoryCheckpoint[];
+  cover_video_url: string | null;
 }
 
 // =============================================================================
@@ -349,8 +351,11 @@ export interface BookListItem {
   title: string;
   author: string | null;
   cover_url: string | null;
+  cover_video_url: string | null;
   total_chapters: number;
+  total_chunks: number;
   total_duration_ms: number;
+  status?: 'available' | 'coming_soon';
 }
 ```
 
@@ -465,11 +470,11 @@ export interface GetBooksResponse {
 // GET /api/books/[id]
 export interface GetBookResponse {
   book: BookMeta;
-  manifest: Manifest;
   chapters: Chapter[];
   chunks: Chunk[];
   playback_map: PlaybackMapEntry[];
   checkpoints: MemoryCheckpoint[];
+  cover_video_url: string | null;
 }
 
 // POST /api/ask

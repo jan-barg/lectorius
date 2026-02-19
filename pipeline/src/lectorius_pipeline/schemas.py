@@ -17,6 +17,7 @@ class BookMeta(BaseModel):
     book_type: Literal["fiction", "non-fiction", "biography"] = "fiction"
     source: str | None = None
     source_id: str | None = None
+    status: Literal["available", "coming_soon"] = "available"
 
 
 class ManifestConfig(BaseModel):

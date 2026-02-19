@@ -6,5 +6,6 @@
   "year": 1999,
   "book_type": "fiction",
   "source": "gutenberg",
-  "source_id": "1952"
+  "source_id": "1952",
+  "status": "available"
 }
