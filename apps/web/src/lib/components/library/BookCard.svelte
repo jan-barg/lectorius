@@ -8,6 +8,8 @@
 
 	let hovering = false;
 
+	$: isComingSoon = book.status === 'coming_soon';
+
 	function formatDuration(ms: number): string {
 		const hours = Math.floor(ms / 3600000);
 		const minutes = Math.floor((ms % 3600000) / 60000);
@@ -16,19 +18,21 @@
 	}
 </script>
 
-<a
-	href="/book/{book.book_id}"
-	class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-primary/50"
-	on:mouseenter={() => (hovering = true)}
-	on:mouseleave={() => (hovering = false)}
->
+{#snippet cardContent()}
 	<!-- Cover area -->
 	<div class="relative aspect-[3/4] overflow-hidden">
 		<BookCardVideo
 			src={book.cover_video_url}
-			{hovering}
+			hovering={isComingSoon ? false : hovering}
 			fallbackChar={book.title.charAt(0)}
 		/>
+
+		<!-- Coming Soon badge -->
+		{#if isComingSoon}
+			<div class="absolute top-3 right-3 rounded-full bg-violet-600 px-2 py-1 text-xs font-medium text-white shadow-lg">
+				Coming Soon
+			</div>
+		{/if}
 
 		<!-- Gradient overlay with metadata -->
 		<div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
@@ -39,7 +43,7 @@
 		</div>
 
 		<!-- Progress bar -->
-		{#if progress !== null}
+		{#if progress !== null && !isComingSoon}
 			<ProgressOverlay percentage={progress} />
 		{/if}
 	</div>
@@ -52,4 +56,25 @@
 			<span>{formatDuration(book.total_duration_ms)}</span>
 		</div>
 	</div>
-</a>
+{/snippet}
+
+{#if isComingSoon}
+	<div
+		class="group block overflow-hidden rounded-xl bg-surface cursor-not-allowed opacity-70 grayscale-[30%]"
+		on:mouseenter={() => (hovering = true)}
+		on:mouseleave={() => (hovering = false)}
+		role="img"
+		aria-label="{book.title} — coming soon"
+	>
+		{@render cardContent()}
+	</div>
+{:else}
+	<a
+		href="/book/{book.book_id}"
+		class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-primary/50"
+		on:mouseenter={() => (hovering = true)}
+		on:mouseleave={() => (hovering = false)}
+	>
+		{@render cardContent()}
+	</a>
+{/if}

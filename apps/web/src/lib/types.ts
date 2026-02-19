@@ -11,6 +11,7 @@ export interface BookMeta {
 	book_type: 'fiction' | 'non-fiction' | 'biography';
 	source: string | null;
 	source_id: string | null;
+	status?: 'available' | 'coming_soon';
 }
 
 // =============================================================================
@@ -153,6 +154,7 @@ export interface LoadedBook {
 	chunks: Chunk[];
 	playbackMap: PlaybackMapEntry[];
 	checkpoints: MemoryCheckpoint[];
+	cover_video_url: string | null;
 }
 
 // =============================================================================
@@ -168,6 +170,7 @@ export interface BookListItem {
 	total_chapters: number;
 	total_chunks: number;
 	total_duration_ms: number;
+	status?: 'available' | 'coming_soon';
 }
 
 // =============================================================================
@@ -184,6 +187,7 @@ export interface GetBookResponse {
 	chunks: Chunk[];
 	playback_map: PlaybackMapEntry[];
 	checkpoints: MemoryCheckpoint[];
+	cover_video_url: string | null;
 }
 
 export interface AskRequest {

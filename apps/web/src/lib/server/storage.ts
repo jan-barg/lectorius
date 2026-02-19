@@ -69,7 +69,8 @@ export async function listBooks(): Promise<BookListItem[]> {
 				cover_video_url: `${storageBase}/${bookMeta.book_id}/cover.mp4`,
 				total_chapters: manifest.stats.chapters,
 				total_chunks: manifest.stats.chunks,
-				total_duration_ms: manifest.stats.total_audio_duration_ms
+				total_duration_ms: manifest.stats.total_audio_duration_ms,
+				status: bookMeta.status || 'available'
 			};
 		})
 	);
@@ -94,5 +95,7 @@ export async function getBookDetail(bookId: string): Promise<GetBookResponse> {
 		audio_path: `${storageBase}/${entry.audio_path}`
 	}));
 
-	return { book, chapters, chunks, playback_map, checkpoints };
+	const cover_video_url = `${storageBase}/cover.mp4`;
+
+	return { book, chapters, chunks, playback_map, checkpoints, cover_video_url };
 }

@@ -213,11 +213,23 @@
 		{/if}
 	</div>
 
-	<!-- Cover placeholder -->
-	<div class="mx-auto flex h-64 w-64 items-center justify-center rounded-2xl bg-surface">
-		<span class="text-6xl font-bold text-primary/20">
-			{loadedBook.book.title.charAt(0)}
-		</span>
+	<!-- Cover art -->
+	<div class="mx-auto w-64 overflow-hidden rounded-2xl bg-surface" style="aspect-ratio: 4/5;">
+		{#if loadedBook.cover_video_url}
+			<video
+				src={loadedBook.cover_video_url}
+				preload="auto"
+				muted
+				class="h-full w-full object-cover"
+				on:loadeddata={(e) => e.currentTarget.currentTime = 0}
+			></video>
+		{:else}
+			<div class="flex h-full w-full items-center justify-center">
+				<span class="text-6xl font-bold text-primary/20">
+					{loadedBook.book.title.charAt(0)}
+				</span>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Progress -->

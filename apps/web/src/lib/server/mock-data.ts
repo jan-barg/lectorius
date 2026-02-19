@@ -100,5 +100,5 @@ export function getMockBookDetail(bookId: string) {
 		}
 	];
 
-	return { book, chapters, chunks, playback_map: playbackMap, checkpoints };
+	return { book, chapters, chunks, playback_map: playbackMap, checkpoints, cover_video_url: null };
 }

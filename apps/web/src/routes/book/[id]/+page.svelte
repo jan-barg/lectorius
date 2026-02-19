@@ -27,7 +27,8 @@
 				chapters: data.chapters,
 				chunks: data.chunks,
 				playbackMap: data.playback_map,
-				checkpoints: data.checkpoints
+				checkpoints: data.checkpoints,
+				cover_video_url: data.cover_video_url
 			});
 
 			playback.setBook(bookId);
