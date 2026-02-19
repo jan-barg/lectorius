@@ -31,6 +31,6 @@
 	></video>
 {:else}
 	<div class="flex h-full w-full items-center justify-center bg-background">
-		<span class="text-5xl font-bold text-primary/30">{fallbackChar}</span>
+		<span class="text-5xl font-bold text-accent/30">{fallbackChar}</span>
 	</div>
 {/if}

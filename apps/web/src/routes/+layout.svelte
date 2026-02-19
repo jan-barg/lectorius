@@ -1,11 +1,17 @@
 <script lang="ts">
 	import '../app.css';
 	import SettingsPanel from '$lib/components/settings/SettingsPanel.svelte';
+	import { settings } from '$lib/stores/settings';
+	import { onMount } from 'svelte';
 
 	let settingsOpen = false;
+
+	onMount(() => {
+		settings.init();
+	});
 </script>
 
-<div class="min-h-screen bg-background">
+<div class="min-h-screen bg-background transition-colors duration-300">
 	<!-- Top bar -->
 	<nav class="flex items-center justify-between px-4 py-3">
 		<a href="/" class="text-lg font-bold text-text">lectorius</a>

@@ -29,7 +29,7 @@
 
 		<!-- Coming Soon badge -->
 		{#if isComingSoon}
-			<div class="absolute top-3 right-3 rounded-full bg-violet-600 px-2 py-1 text-xs font-medium text-white shadow-lg">
+			<div class="absolute top-3 right-3 rounded-full bg-accent px-2 py-1 text-xs font-medium text-white shadow-lg">
 				Coming Soon
 			</div>
 		{/if}
@@ -71,7 +71,7 @@
 {:else}
 	<a
 		href="/book/{book.book_id}"
-		class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-primary/50"
+		class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-accent/50"
 		on:mouseenter={() => (hovering = true)}
 		on:mouseleave={() => (hovering = false)}
 	>

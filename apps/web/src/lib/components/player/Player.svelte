@@ -214,7 +214,7 @@
 	</div>
 
 	<!-- Cover art -->
-	<div class="mx-auto w-64 overflow-hidden rounded-2xl bg-surface" style="aspect-ratio: 4/5;">
+	<div class="mx-auto w-64 overflow-hidden rounded-2xl bg-surface" style="aspect-ratio: 3/4;">
 		{#if loadedBook.cover_video_url}
 			<video
 				src={loadedBook.cover_video_url}
@@ -225,7 +225,7 @@
 			></video>
 		{:else}
 			<div class="flex h-full w-full items-center justify-center">
-				<span class="text-6xl font-bold text-primary/20">
+				<span class="text-6xl font-bold text-accent/20">
 					{loadedBook.book.title.charAt(0)}
 				</span>
 			</div>

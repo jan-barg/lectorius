@@ -21,7 +21,7 @@
 			onclick={() => handleClick(chapter.chapter_id)}
 			class="w-full rounded-lg px-3 py-2 text-left text-sm transition-colors
 				{chapter.chapter_id === currentChapterId
-					? 'bg-primary/10 text-primary'
+					? 'bg-accent/10 text-accent'
 					: 'text-muted hover:bg-surface hover:text-text'}"
 			aria-label="Jump to {chapter.title}"
 		>

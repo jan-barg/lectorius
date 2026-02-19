@@ -1,17 +1,18 @@
 export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
+	darkMode: 'class',
 	theme: {
 		extend: {
 			colors: {
-				primary: '#6366f1',
-				secondary: '#a855f7',
-				background: '#0f0f0f',
-				surface: '#1a1a1a',
-				text: '#fafafa',
-				muted: '#71717a'
+				background: 'rgb(var(--color-background) / <alpha-value>)',
+				surface: 'rgb(var(--color-surface) / <alpha-value>)',
+				text: 'rgb(var(--color-text) / <alpha-value>)',
+				muted: 'rgb(var(--color-muted) / <alpha-value>)',
+				accent: 'rgb(var(--color-accent) / <alpha-value>)'
 			},
 			fontFamily: {
-				sans: ['Inter', 'system-ui', 'sans-serif']
+				sans: ['Outfit', 'sans-serif'],
+				serif: ['Merriweather', 'serif']
 			}
 		}
 	},

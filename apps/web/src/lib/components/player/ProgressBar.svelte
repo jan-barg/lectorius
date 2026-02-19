@@ -117,7 +117,7 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-0 h-full rounded-full bg-primary transition-[width] duration-100"
+			class="absolute left-0 top-0 h-full rounded-full bg-accent transition-[width] duration-150"
 			style="width: {progress}%"
 		></div>
 

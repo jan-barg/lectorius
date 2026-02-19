@@ -62,7 +62,7 @@
 
 	{#if bookState?.is_loading}
 		<div class="flex justify-center py-20">
-			<div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+			<div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
 		</div>
 	{:else if bookState?.error}
 		<p class="text-center text-red-400">{bookState.error}</p>

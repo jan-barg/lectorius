@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+	:root {
+		/* Light Mode (Warm Paper) */
+		--color-background: 250 250 249;
+		/* stone-50 #fafaf9 */
+		--color-surface: 255 255 255;
+		/* white #ffffff */
+		--color-text: 28 25 23;
+		/* stone-900 #1c1917 */
+		--color-muted: 120 113 108;
+		/* stone-500 #78716c */
+		--color-accent: 124 58 237;
+		/* violet-600 #7c3aed */
+	}
+
+	.dark {
+		/* Dark Mode (Deep Tech) */
+		--color-background: 2 6 23;
+		/* slate-950 #020617 */
+		--color-surface: 15 23 42;
+		/* slate-900 #0f172a */
+		--color-text: 248 250 252;
+		/* slate-50 #f8fafc */
+		--color-muted: 148 163 184;
+		/* slate-400 #94a3b8 */
+		--color-accent: 124 58 237;
+		/* violet-600 #7c3aed */
+	}
+}
+
 html {
-	font-family: 'Inter', system-ui, sans-serif;
+	font-family: 'Outfit', system-ui, sans-serif;
 }

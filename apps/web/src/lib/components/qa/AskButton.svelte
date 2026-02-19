@@ -264,7 +264,7 @@
 			? 'bg-surface text-muted cursor-wait'
 			: isPlayingAnswer
 				? 'bg-green-600 text-white'
-				: 'bg-secondary text-white hover:bg-secondary/80'}"
+				: 'bg-accent text-white hover:bg-accent/80'}"
 	aria-label={isRecording ? 'Release to send' : 'Hold to ask a question'}
 >
 	{#if isRecording}
