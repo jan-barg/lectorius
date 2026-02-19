@@ -19,32 +19,45 @@
 </script>
 
 {#snippet cardContent()}
-	<!-- Cover area -->
-	<div class="relative aspect-[3/4] overflow-hidden">
+	<div class="relative w-full aspect-[3/4] overflow-hidden bg-stone-200 dark:bg-slate-800 {isComingSoon ? 'grayscale-[30%] opacity-80' : ''}">
 		<BookCardVideo
 			src={book.cover_video_url}
-			hovering={isComingSoon ? false : hovering}
+			{hovering}
 			fallbackChar={book.title.charAt(0)}
 		/>
 
 		<!-- Coming Soon badge -->
 		{#if isComingSoon}
-			<div class="absolute top-3 right-3 rounded-full bg-accent px-2 py-1 text-xs font-medium text-white shadow-lg">
-				Coming Soon
+			<div class="absolute top-3 right-3 z-20">
+				<span class="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-accent text-white shadow-lg shadow-accent/20">
+					Coming Soon
+				</span>
 			</div>
 		{/if}
 
+		<!-- Glassmorphism blur layer (masked to fade in smoothly) -->
+		<div
+			class="pointer-events-none absolute bottom-0 inset-x-0 z-[9] h-2/3 backdrop-blur-md"
+			style="-webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 100%); mask-image: linear-gradient(to bottom, transparent 0%, black 100%);"
+		></div>
+
 		<!-- Gradient overlay with metadata -->
-		<div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4 pt-12">
-			<h3 class="text-sm font-semibold text-white">{book.title}</h3>
+		<div class="pointer-events-none absolute bottom-0 inset-x-0 z-10 flex flex-col justify-end p-4 pt-12 bg-gradient-to-t from-black/60 via-black/25 to-transparent">
+			<h3 class="text-lg font-bold leading-tight text-white drop-shadow-md line-clamp-2 group-hover:text-violet-100 transition-colors">
+				{book.title}
+			</h3>
 			{#if book.author}
-				<p class="mt-0.5 text-xs text-white/70">{book.author}</p>
+				<p class="mt-1 text-xs font-medium text-stone-300 group-hover:text-white transition-colors">
+					{book.author}
+				</p>
 			{/if}
 		</div>
 
 		<!-- Progress bar -->
 		{#if progress !== null && !isComingSoon}
-			<ProgressOverlay percentage={progress} />
+			<div class="absolute bottom-0 left-0 w-full z-20">
+				<ProgressOverlay percentage={progress} />
+			</div>
 		{/if}
 	</div>
 
@@ -60,7 +73,7 @@
 
 {#if isComingSoon}
 	<div
-		class="group block overflow-hidden rounded-xl bg-surface cursor-not-allowed opacity-70 grayscale-[30%]"
+		class="group block overflow-hidden rounded-xl bg-surface cursor-not-allowed"
 		on:mouseenter={() => (hovering = true)}
 		on:mouseleave={() => (hovering = false)}
 		role="img"
@@ -71,7 +84,7 @@
 {:else}
 	<a
 		href="/book/{book.book_id}"
-		class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-1 hover:ring-2 hover:ring-accent/50"
+		class="group block overflow-hidden rounded-xl bg-surface transition-all duration-200 hover:-translate-y-2 hover:ring-2 hover:ring-accent/50"
 		on:mouseenter={() => (hovering = true)}
 		on:mouseleave={() => (hovering = false)}
 	>

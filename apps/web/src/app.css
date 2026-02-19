@@ -35,3 +35,37 @@
 html {
 	font-family: 'Outfit', system-ui, sans-serif;
 }
+
+/* AskButton animations */
+@property --angle {
+	syntax: '<angle>';
+	initial-value: 0deg;
+	inherits: false;
+}
+
+@keyframes spin-border {
+	from { --angle: 0deg; }
+	to { --angle: 360deg; }
+}
+
+@keyframes breathe {
+	0%, 100% { transform: scale(1); }
+	50% { transform: scale(1.05); }
+}
+
+@keyframes gentle-pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.85; }
+}
+
+.animate-spin-border {
+	animation: spin-border 1.5s linear infinite;
+}
+
+.animate-breathe {
+	animation: breathe 1.5s ease-in-out infinite;
+}
+
+.animate-gentle-pulse {
+	animation: gentle-pulse 2.5s ease-in-out infinite;
+}

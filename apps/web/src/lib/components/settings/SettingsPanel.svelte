@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { fly, fade } from 'svelte/transition';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 
 	export let open = false;
@@ -14,13 +15,17 @@
 {#if open}
 	<!-- Backdrop -->
 	<button
-		class="fixed inset-0 z-40 bg-black/50 transition-opacity"
+		class="fixed inset-0 z-40 bg-black/50"
 		on:click={onClose}
 		aria-label="Close settings"
+		transition:fade={{ duration: 200 }}
 	></button>
 
 	<!-- Panel -->
-	<div class="fixed top-0 right-0 z-50 h-full w-80 bg-surface p-6 shadow-xl transition-transform">
+	<div
+		class="fixed top-0 right-0 z-50 h-full w-80 bg-surface p-6 shadow-xl"
+		transition:fly={{ x: 320, duration: 300, opacity: 1 }}
+	>
 		<div class="mb-6 flex items-center justify-between">
 			<h2 class="text-lg font-semibold text-text">Settings</h2>
 			<button class="text-muted hover:text-text" on:click={onClose} aria-label="Close">

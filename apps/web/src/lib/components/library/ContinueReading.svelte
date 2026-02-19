@@ -18,16 +18,32 @@
 </script>
 
 {#if sortedBooks.length > 0}
-	<section>
-		<h2 class="mb-4 text-lg font-semibold text-muted">Continue Reading</h2>
-		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+	<section class="mb-8">
+		<div class="mb-4 flex items-baseline justify-between">
+			<h2 class="text-2xl font-bold text-text">Continue Reading</h2>
+		</div>
+
+		<div class="-mx-2 -mt-4 flex flex-nowrap gap-6 overflow-x-auto px-2 pt-4 pb-8 snap-x snap-mandatory scroll-smooth">
 			{#each sortedBooks as book (book.book_id)}
 				{@const entry = historyMap.get(book.book_id)}
-				<BookCard
-					{book}
-					progress={entry ? (entry.last_chunk_index / entry.total_chunks) * 100 : null}
-				/>
+				<div class="w-44 flex-shrink-0 snap-start sm:w-52">
+					<BookCard
+						{book}
+						progress={entry ? (entry.last_chunk_index / entry.total_chunks) * 100 : null}
+					/>
+				</div>
 			{/each}
+			<div class="w-2 flex-shrink-0"></div>
 		</div>
 	</section>
 {/if}
+
+<style>
+	.overflow-x-auto::-webkit-scrollbar {
+		display: none;
+	}
+	.overflow-x-auto {
+		-ms-overflow-style: none;
+		scrollbar-width: none;
+	}
+</style>

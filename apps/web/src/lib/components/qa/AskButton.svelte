@@ -250,65 +250,86 @@
 	});
 </script>
 
-<button
-	onmouseenter={handleMouseEnter}
-	ontouchstart={handleTouchStart}
-	onpointerdown={handlePointerDown}
-	onpointerup={handlePointerUp}
-	onpointerleave={handlePointerLeave}
-	disabled={isProcessing || isPlayingAnswer}
-	class="flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition-all
-		{isRecording
-		? 'bg-red-500 text-white animate-pulse'
-		: isProcessing
-			? 'bg-surface text-muted cursor-wait'
-			: isPlayingAnswer
-				? 'bg-green-600 text-white'
-				: 'bg-accent text-white hover:bg-accent/80'}"
-	aria-label={isRecording ? 'Release to send' : 'Hold to ask a question'}
->
-	{#if isRecording}
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-			<path
-				d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
-			/>
-			<path
-				d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
-			/>
-		</svg>
-		Listening...
-	{:else if isProcessing}
-		<svg
-			class="h-5 w-5 animate-spin"
-			xmlns="http://www.w3.org/2000/svg"
-			fill="none"
-			viewBox="0 0 24 24"
-		>
-			<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
-			></circle>
-			<path
-				class="opacity-75"
-				fill="currentColor"
-				d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-			></path>
-		</svg>
-		Thinking...
-	{:else if isPlayingAnswer}
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-			<path
-				d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"
-			/>
-		</svg>
-		Speaking...
-	{:else}
-		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
-			<path
-				d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"
-			/>
-			<path
-				d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"
-			/>
-		</svg>
-		Hold to Ask
+<div class="relative inline-flex items-center justify-center group touch-none select-none isolate">
+	<!-- Warm hover glow (idle only) -->
+	<div
+		class="absolute inset-0 rounded-full bg-orange-400/30 blur-xl transition-all duration-700 ease-out -z-10
+			{!isRecording && !isProcessing && !isPlayingAnswer
+				? 'opacity-0 group-hover:opacity-100 group-hover:scale-125'
+				: 'opacity-0'}"
+	></div>
+
+	<!-- Spinning conic border (thinking only) -->
+	{#if isProcessing}
+		<div
+			class="absolute -inset-[3px] rounded-full -z-10 animate-spin-border"
+			style="background: conic-gradient(from var(--angle), transparent, rgb(var(--color-accent)), transparent);"
+		></div>
 	{/if}
-</button>
+
+	<button
+		onmouseenter={handleMouseEnter}
+		ontouchstart={handleTouchStart}
+		onpointerdown={handlePointerDown}
+		onpointerup={handlePointerUp}
+		onpointerleave={handlePointerLeave}
+		oncontextmenu={(e) => e.preventDefault()}
+		disabled={isProcessing || isPlayingAnswer}
+		class="relative z-10 flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold text-lg tracking-wide overflow-hidden transition-all duration-300 bg-stone-100 dark:bg-slate-800 text-stone-900 dark:text-slate-50 active:scale-95"
+		aria-label={isRecording ? 'Release to send' : 'Hold to ask a question'}
+	>
+		<!-- Color fill circle (expands for recording/speaking) -->
+		<div
+			class="absolute inset-0 m-auto w-[200%] h-[200%] rounded-full transition-transform duration-500 ease-out origin-center pointer-events-none -z-10
+				{isRecording
+					? 'bg-accent scale-100'
+					: isPlayingAnswer
+						? 'bg-emerald-500 dark:bg-emerald-400 scale-100'
+						: 'scale-0 bg-transparent'}"
+		></div>
+
+		<div class="relative z-20 flex items-center gap-3 transition-colors duration-300
+			{isRecording || isPlayingAnswer ? 'text-white' : ''}">
+
+			{#if !isPlayingAnswer}
+				<svg
+					class="w-6 h-6 transition-all duration-300 {isProcessing ? 'scale-0 opacity-0 w-0' : 'scale-100 opacity-100'}"
+					fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+				</svg>
+			{/if}
+
+			{#if isPlayingAnswer}
+				<svg
+					class="w-6 h-6 animate-gentle-bounce"
+					fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+				</svg>
+			{/if}
+
+			<span class="whitespace-nowrap">
+				{#if isRecording}
+					Listening...
+				{:else if isProcessing}
+					Thinking...
+				{:else if isPlayingAnswer}
+					Speaking...
+				{:else}
+					Hold to Ask
+				{/if}
+			</span>
+		</div>
+	</button>
+</div>
+
+<style>
+	@keyframes gentle-bounce {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(-2px); }
+	}
+	.animate-gentle-bounce {
+		animation: gentle-bounce 2s ease-in-out infinite;
+	}
+</style>
