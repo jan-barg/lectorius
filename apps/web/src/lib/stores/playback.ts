@@ -21,6 +21,7 @@ function createPlaybackStore() {
 		setChunk: (index: number) => update((s) => ({ ...s, chunk_index: index, chunk_time_ms: 0 })),
 		setChunkTime: (ms: number) => update((s) => ({ ...s, chunk_time_ms: ms })),
 		setSpeed: (speed: PlaybackSpeed) => update((s) => ({ ...s, playback_speed: speed })),
+		setVolume: (volume: number) => update((s) => ({ ...s, volume: Math.max(0, Math.min(1, volume)) })),
 		setBook: (book_id: string) =>
 			update((s) => ({ ...s, book_id, chunk_index: 1, chunk_time_ms: 0, is_playing: false })),
 		nextChunk: (totalChunks: number) =>

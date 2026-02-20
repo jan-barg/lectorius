@@ -28,6 +28,7 @@
 	let prevChunkIndex = 0;
 	let prevIsPlaying = false;
 	let prevSpeed = 1;
+	let prevVolume = 1;
 	let restoredSeekMs: number | null = null;
 
 	function handleChunkEnd() {
@@ -87,6 +88,7 @@
 	function handleSeek(chunkIndex: number, offsetMs: number) {
 		playback.setChunk(chunkIndex);
 		playback.setChunkTime(offsetMs);
+		playback.play();
 		savePosition();
 		engine?.play(chunkIndex, offsetMs);
 	}
@@ -202,6 +204,12 @@
 		if (state.playback_speed !== prevSpeed) {
 			engine.setSpeed(state.playback_speed);
 			prevSpeed = state.playback_speed;
+		}
+
+		// React to volume changes
+		if (state.volume !== prevVolume) {
+			engine.setVolume(state.volume);
+			prevVolume = state.volume;
 		}
 	});
 

@@ -76,6 +76,10 @@ export class AudioEngine {
 		this.audio.playbackRate = rate;
 	}
 
+	setVolume(volume: number): void {
+		this.audio.volume = Math.max(0, Math.min(1, volume));
+	}
+
 	destroy(): void {
 		this.audio.pause();
 		this.audio.removeEventListener('ended', this.handleEnded);

@@ -12,6 +12,7 @@ export interface PlaybackState {
 	chunk_time_ms: number;
 	is_playing: boolean;
 	playback_speed: PlaybackSpeed;
+	volume: number;
 	sleep_timer_end: number | null;
 }
 
@@ -21,6 +22,7 @@ export const DEFAULT_PLAYBACK_STATE: PlaybackState = {
 	chunk_time_ms: 0,
 	is_playing: false,
 	playback_speed: 1,
+	volume: 1,
 	sleep_timer_end: null
 };
 

@@ -1,12 +1,58 @@
 <script lang="ts">
-    // We will use this fake state to build the UI.
-    // Later, you will pass this in as an export let volume = 1;
-    let volume = 0.75;
-    let isHovered = false;
+    import { playback } from '$lib/stores/playback';
+    import { onDestroy } from 'svelte';
 
-    // We'll change the icon based on how loud it is
+    let volume = 1;
+    let preMuteVolume = 1;
+    let isHovered = false;
+    let isDragging = false;
+    let trackEl: HTMLDivElement;
+
+    const unsub = playback.subscribe((s) => {
+        volume = s.volume;
+    });
+
     $: isMuted = volume === 0;
     $: isLow = volume > 0 && volume < 0.5;
+
+    function toggleMute() {
+        if (isMuted) {
+            playback.setVolume(preMuteVolume || 0.75);
+        } else {
+            preMuteVolume = volume;
+            playback.setVolume(0);
+        }
+    }
+
+    function volumeFromPointer(e: PointerEvent) {
+        const rect = trackEl.getBoundingClientRect();
+        const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        playback.setVolume(ratio);
+    }
+
+    function handleTrackPointerDown(e: PointerEvent) {
+        isDragging = true;
+        volumeFromPointer(e);
+        window.addEventListener('pointermove', handleWindowPointerMove);
+        window.addEventListener('pointerup', handleWindowPointerUp);
+    }
+
+    function handleWindowPointerMove(e: PointerEvent) {
+        if (!isDragging) return;
+        volumeFromPointer(e);
+    }
+
+    function handleWindowPointerUp() {
+        isDragging = false;
+        window.removeEventListener('pointermove', handleWindowPointerMove);
+        window.removeEventListener('pointerup', handleWindowPointerUp);
+    }
+
+    onDestroy(() => {
+        unsub();
+        window.removeEventListener('pointermove', handleWindowPointerMove);
+        window.removeEventListener('pointerup', handleWindowPointerUp);
+    });
 </script>
 
 <div
@@ -14,10 +60,12 @@
     aria-label="Volume controls"
     class="group relative flex items-center h-12"
     onmouseenter={() => (isHovered = true)}
-    onmouseleave={() => (isHovered = false)}
+    onmouseleave={() => { if (!isDragging) isHovered = false; }}
 >
     <button
+        onclick={toggleMute}
         class="w-12 h-12 flex items-center justify-center text-muted hover:text-text transition-colors"
+        aria-label={isMuted ? 'Unmute' : 'Mute'}
     >
         {#if isMuted}
             <svg
@@ -68,15 +116,17 @@
     </button>
 
     <div
-        class="overflow-hidden transition-all duration-300 ease-out flex items-center {isHovered
+        class="overflow-hidden transition-all duration-300 ease-out flex items-center {isHovered || isDragging
             ? 'w-24 opacity-100 pr-2'
             : 'w-0 opacity-0'}"
     >
         <div
+            bind:this={trackEl}
             class="relative w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full cursor-pointer"
+            onpointerdown={handleTrackPointerDown}
         >
             <div
-                class="absolute left-0 top-0 h-full bg-accent rounded-full transition-all duration-100"
+                class="absolute left-0 top-0 h-full bg-accent rounded-full transition-[width] duration-100"
                 style="width: {volume * 100}%"
             ></div>
             <div
