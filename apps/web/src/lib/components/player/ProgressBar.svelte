@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { playback } from '$lib/stores/playback';
-	import type { PlaybackMapEntry, Chapter, Chunk } from '$lib/types';
+	import { playback } from "$lib/stores/playback";
+	import type { PlaybackMapEntry, Chapter, Chunk } from "$lib/types";
 
 	export let playbackMap: PlaybackMapEntry[];
 	export let chapters: Chapter[];
@@ -16,7 +16,9 @@
 	});
 
 	// Sort playback map by chunk_index for cumulative duration calculations
-	$: sortedMap = [...playbackMap].sort((a, b) => a.chunk_index - b.chunk_index);
+	$: sortedMap = [...playbackMap].sort(
+		(a, b) => a.chunk_index - b.chunk_index,
+	);
 	$: totalDurationMs = sortedMap.reduce((sum, e) => sum + e.duration_ms, 0);
 
 	$: elapsedMs = (() => {
@@ -40,12 +42,19 @@
 	let barEl: HTMLDivElement;
 	let showTooltip = false;
 	let tooltipX = 0;
-	let tooltipTime = '';
-	let tooltipChapter = '';
+	let tooltipTime = "";
+	let tooltipChapter = "";
 
-	function positionToTarget(clientX: number): { chunkIndex: number; offsetMs: number; timeMs: number } {
+	function positionToTarget(clientX: number): {
+		chunkIndex: number;
+		offsetMs: number;
+		timeMs: number;
+	} {
 		const rect = barEl.getBoundingClientRect();
-		const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+		const pct = Math.max(
+			0,
+			Math.min(1, (clientX - rect.left) / rect.width),
+		);
 		const targetMs = pct * totalDurationMs;
 
 		let cumulative = 0;
@@ -54,7 +63,7 @@
 				return {
 					chunkIndex: entry.chunk_index,
 					offsetMs: targetMs - cumulative,
-					timeMs: targetMs
+					timeMs: targetMs,
 				};
 			}
 			cumulative += entry.duration_ms;
@@ -62,7 +71,11 @@
 
 		// Past the end — return last chunk at its end
 		const last = sortedMap[sortedMap.length - 1];
-		return { chunkIndex: last.chunk_index, offsetMs: last.duration_ms, timeMs: totalDurationMs };
+		return {
+			chunkIndex: last.chunk_index,
+			offsetMs: last.duration_ms,
+			timeMs: totalDurationMs,
+		};
 	}
 
 	function handleClick(e: MouseEvent) {
@@ -79,10 +92,12 @@
 		// Find chapter for the target chunk
 		const chunk = chunks.find((c) => c.chunk_index === target.chunkIndex);
 		if (chunk) {
-			const chapter = chapters.find((ch) => ch.chapter_id === chunk.chapter_id);
-			tooltipChapter = chapter?.title ?? '';
+			const chapter = chapters.find(
+				(ch) => ch.chapter_id === chunk.chapter_id,
+			);
+			tooltipChapter = chapter?.title ?? "";
 		} else {
-			tooltipChapter = '';
+			tooltipChapter = "";
 		}
 
 		showTooltip = true;
@@ -96,17 +111,17 @@
 		const totalSeconds = Math.floor(ms / 1000);
 		const minutes = Math.floor(totalSeconds / 60);
 		const seconds = totalSeconds % 60;
-		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+		return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 	}
 </script>
 
-<div class="w-full px-4">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- onkeydown does nothin - but needed for accessibility (thank you svelte...) -->
+<div class="w-full group">
 	<div
-		class="relative h-2 w-full cursor-pointer overflow-visible rounded-full bg-surface"
+		class="relative h-[4px] w-full cursor-pointer overflow-visible rounded-full bg-muted/30 py-2 bg-clip-content transition-all"
 		bind:this={barEl}
 		onclick={handleClick}
+		onkeydown={() => {}}
 		onmousemove={handleMouseMove}
 		onmouseleave={handleMouseLeave}
 		role="slider"
@@ -117,24 +132,32 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-0 h-full rounded-full bg-accent transition-[width] duration-150"
+			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-accent shadow-[0_0_12px_rgba(124,58,237,0.8)] transition-[width] duration-150"
 			style="width: {progress}%"
-		></div>
+		>
+			<div
+				class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-50 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"
+			></div>
+		</div>
 
 		{#if showTooltip}
 			<div
-				class="absolute bottom-full mb-2 -translate-x-1/2 whitespace-nowrap rounded bg-surface px-2 py-1 text-xs shadow-lg"
+				class="absolute bottom-full mb-3 -translate-x-1/2 whitespace-nowrap rounded-lg bg-surface/60 backdrop-blur-md border border-white/10 px-3 py-1.5 text-xs shadow-xl pointer-events-none z-50"
 				style="left: {tooltipX}px"
 			>
-				<span class="text-text">{tooltipTime}</span>
+				<span class="text-text font-bold tracking-wide"
+					>{tooltipTime}</span
+				>
 				{#if tooltipChapter}
-					<span class="ml-1 text-muted">{tooltipChapter}</span>
+					<span class="ml-1.5 text-muted">{tooltipChapter}</span>
 				{/if}
 			</div>
 		{/if}
 	</div>
 
-	<div class="mt-1 flex justify-between text-xs text-muted">
+	<div
+		class="mt-3 flex justify-between text-[11px] font-medium tracking-wide text-muted pointer-events-none"
+	>
 		<span>{formatTime(elapsedMs)}</span>
 		<span>{formatTime(totalDurationMs)}</span>
 	</div>

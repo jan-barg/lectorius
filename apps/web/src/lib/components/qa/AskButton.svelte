@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { qa } from '$lib/stores/qa';
-	import { playback } from '$lib/stores/playback';
-	import { type Recorder, blobToBase64 } from '$lib/services/recorder';
-	import { get } from 'svelte/store';
-	import { onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
+	import { qa } from "$lib/stores/qa";
+	import { playback } from "$lib/stores/playback";
+	import { type Recorder, blobToBase64 } from "$lib/services/recorder";
+	import { get } from "svelte/store";
+	import { onDestroy } from "svelte";
+	import { browser } from "$app/environment";
 
 	export let bookId: string;
 	export let onAnswerComplete: () => void;
@@ -40,17 +40,19 @@
 		answerAudio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
 		answerAudio.onplay = () => {
 			if (!firstAudioPlayed) {
-				console.log(`[qa] TIME TO FIRST AUDIO: ${Date.now() - requestStartTime}ms`);
+				console.log(
+					`[qa] TIME TO FIRST AUDIO: ${Date.now() - requestStartTime}ms`,
+				);
 				firstAudioPlayed = true;
 			}
 		};
 		answerAudio.onended = playNextAudio;
 		answerAudio.onerror = () => {
-			console.error('[audio] Playback error');
+			console.error("[audio] Playback error");
 			playNextAudio();
 		};
 		answerAudio.play().catch((e) => {
-			console.error('[audio] Play failed:', e);
+			console.error("[audio] Play failed:", e);
 			playNextAudio();
 		});
 	}
@@ -79,8 +81,8 @@
 
 			qa.startRecording();
 		} catch (e) {
-			console.error('Failed to start recording:', e);
-			qa.setError('Microphone access denied');
+			console.error("Failed to start recording:", e);
+			qa.setError("Microphone access denied");
 		}
 	}
 
@@ -94,7 +96,9 @@
 
 		try {
 			const blob = await recorder.stopRecording();
-			console.log(`[qa] Recording stopped: ${Date.now() - t0}ms, size: ${blob.size} bytes`);
+			console.log(
+				`[qa] Recording stopped: ${Date.now() - t0}ms, size: ${blob.size} bytes`,
+			);
 
 			qa.stopRecording();
 
@@ -104,37 +108,37 @@
 			const state = get(playback);
 
 			abortController = new AbortController();
-			const response = await fetch('/api/ask', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+			const response = await fetch("/api/ask", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					book_id: bookId,
 					chunk_index: state.chunk_index,
 					chunk_time_ms: state.chunk_time_ms,
-					audio_base64
+					audio_base64,
 				}),
-				signal: abortController.signal
+				signal: abortController.signal,
 			});
 			console.log(`[qa] Stream response received: ${Date.now() - t0}ms`);
 
 			await handleStreamingResponse(response);
 		} catch (e) {
-			if (e instanceof DOMException && e.name === 'AbortError') return;
-			console.error('Q&A failed:', e);
-			qa.setError('Something went wrong');
+			if (e instanceof DOMException && e.name === "AbortError") return;
+			console.error("Q&A failed:", e);
+			qa.setError("Something went wrong");
 			resumeAfterDelay();
 		}
 	}
 
 	async function handleStreamingResponse(response: Response) {
 		if (!response.body) {
-			throw new Error('No response body');
+			throw new Error("No response body");
 		}
 
 		const reader = response.body.getReader();
 		const decoder = new TextDecoder();
-		let sseBuffer = '';
-		let questionText = '';
+		let sseBuffer = "";
+		let questionText = "";
 		let firstAudioReceived = false;
 
 		audioQueue = [];
@@ -147,26 +151,28 @@
 				if (done) break;
 
 				sseBuffer += decoder.decode(value, { stream: true });
-				const lines = sseBuffer.split('\n\n');
-				sseBuffer = lines.pop() || '';
+				const lines = sseBuffer.split("\n\n");
+				sseBuffer = lines.pop() || "";
 
 				for (const line of lines) {
-					if (!line.startsWith('data: ')) continue;
+					if (!line.startsWith("data: ")) continue;
 
 					const data = JSON.parse(line.slice(6));
 
-					if (data.type === 'question') {
+					if (data.type === "question") {
 						questionText = data.text;
 						console.log(`[stream] Question: ${data.text}`);
 					}
 
-					if (data.type === 'audio') {
-						console.log(`[stream] Audio chunk: "${data.text.substring(0, 30)}..."`);
+					if (data.type === "audio") {
+						console.log(
+							`[stream] Audio chunk: "${data.text.substring(0, 30)}..."`,
+						);
 						audioQueue.push(data.audio);
 
 						if (!firstAudioReceived) {
 							firstAudioReceived = true;
-							qa.setAnswer(questionText, '');
+							qa.setAnswer(questionText, "");
 						}
 
 						if (!isPlayingAudio) {
@@ -174,18 +180,18 @@
 						}
 					}
 
-					if (data.type === 'done') {
+					if (data.type === "done") {
 						console.log(`[stream] Stream complete`);
 						streamDone = true;
 						checkComplete();
 					}
 
-					if (data.type === 'error') {
-						console.error('[stream] Error:', data.error);
+					if (data.type === "error") {
+						console.error("[stream] Error:", data.error);
 						if (data.fallback_audio_url) {
 							playFallbackAudio(data.fallback_audio_url);
 						} else {
-							qa.setError(data.error || 'Something went wrong');
+							qa.setError(data.error || "Something went wrong");
 							resumeAfterDelay();
 						}
 						return;
@@ -199,15 +205,15 @@
 				checkComplete();
 			}
 		} catch (e) {
-			if (e instanceof DOMException && e.name === 'AbortError') return;
-			console.error('[stream] Parse error:', e);
-			qa.setError('Something went wrong');
+			if (e instanceof DOMException && e.name === "AbortError") return;
+			console.error("[stream] Parse error:", e);
+			qa.setError("Something went wrong");
 			resumeAfterDelay();
 		}
 	}
 
 	function playFallbackAudio(url: string) {
-		qa.setError('Something went wrong');
+		qa.setError("Something went wrong");
 		answerAudio = new Audio(url);
 		answerAudio.onended = () => resumeAfterDelay();
 		answerAudio.onerror = () => resumeAfterDelay();
@@ -250,23 +256,9 @@
 	});
 </script>
 
-<div class="relative inline-flex items-center justify-center group touch-none select-none isolate">
-	<!-- Warm hover glow (idle only) -->
-	<div
-		class="absolute inset-0 rounded-full bg-orange-400/30 blur-xl transition-all duration-700 ease-out -z-10
-			{!isRecording && !isProcessing && !isPlayingAnswer
-				? 'opacity-0 group-hover:opacity-100 group-hover:scale-125'
-				: 'opacity-0'}"
-	></div>
-
-	<!-- Spinning conic border (thinking only) -->
-	{#if isProcessing}
-		<div
-			class="absolute -inset-[3px] rounded-full -z-10 animate-spin-border"
-			style="background: conic-gradient(from var(--angle), transparent, rgb(var(--color-accent)), transparent);"
-		></div>
-	{/if}
-
+<div
+	class="relative inline-flex items-center justify-center group touch-none select-none isolate"
+>
 	<button
 		onmouseenter={handleMouseEnter}
 		ontouchstart={handleTouchStart}
@@ -275,41 +267,89 @@
 		onpointerleave={handlePointerLeave}
 		oncontextmenu={(e) => e.preventDefault()}
 		disabled={isProcessing || isPlayingAnswer}
-		class="relative z-10 flex items-center justify-center gap-3 px-8 py-4 rounded-full font-bold text-lg tracking-wide overflow-hidden transition-all duration-300 bg-stone-100 dark:bg-slate-800 text-stone-900 dark:text-slate-50 active:scale-95"
-		aria-label={isRecording ? 'Release to send' : 'Hold to ask a question'}
+		class="relative z-10 flex items-center justify-center gap-3 px-8 py-4 w-48 rounded-full font-bold text-lg tracking-wide overflow-hidden transition-all duration-500 bg-surface text-text border border-white/5
+            {!isRecording && !isProcessing && !isPlayingAnswer
+			? 'hover:bg-surface/80 hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] active:scale-95'
+			: ''}
+            {isProcessing
+			? 'shadow-[0_0_40px_rgba(124,58,237,0.6)] border-accent/50'
+			: ''}"
+		aria-label={isRecording ? "Release to send" : "Hold to ask a question"}
 	>
-		<!-- Color fill circle (expands for recording/speaking) -->
 		<div
-			class="absolute inset-0 m-auto w-[200%] h-[200%] rounded-full transition-transform duration-500 ease-out origin-center pointer-events-none -z-10
-				{isRecording
-					? 'bg-accent scale-100'
-					: isPlayingAnswer
-						? 'bg-emerald-500 dark:bg-emerald-400 scale-100'
-						: 'scale-0 bg-transparent'}"
+			class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] aspect-square rounded-full transition-transform duration-700 ease-in-out pointer-events-none -z-10
+                {isRecording
+				? 'bg-accent scale-100'
+				: isPlayingAnswer
+					? 'bg-accent/90 scale-100'
+					: 'scale-0 bg-transparent'}"
 		></div>
 
-		<div class="relative z-20 flex items-center gap-3 transition-colors duration-300
-			{isRecording || isPlayingAnswer ? 'text-white' : ''}">
-
-			{#if !isPlayingAnswer}
+		<div
+			class="relative z-20 flex items-center justify-center gap-3 w-full transition-colors duration-500
+            {isRecording || isPlayingAnswer ? 'text-white' : ''}
+            {isProcessing ? 'text-accent' : ''}"
+		>
+			<div
+				class="relative w-6 h-6 flex-shrink-0 flex items-center justify-center"
+			>
 				<svg
-					class="w-6 h-6 transition-all duration-300 {isProcessing ? 'scale-0 opacity-0 w-0' : 'scale-100 opacity-100'}"
-					fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+					class="absolute inset-0 w-full h-full transition-all duration-300 {isProcessing ||
+					isPlayingAnswer
+						? 'scale-50 opacity-0'
+						: 'scale-100 opacity-100'}"
+					fill="none"
+					viewBox="0 0 24 24"
+					stroke="currentColor"
+					stroke-width="2"
 				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+					/>
 				</svg>
-			{/if}
 
-			{#if isPlayingAnswer}
-				<svg
-					class="w-6 h-6 animate-gentle-bounce"
-					fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+				<div
+					class="absolute inset-0 w-full h-full transition-all duration-300 {isProcessing
+						? 'scale-100 opacity-100'
+						: 'scale-50 opacity-0'}"
 				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-				</svg>
-			{/if}
+					<svg
+						class="w-full h-full animate-spin"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle
+							class="opacity-25"
+							cx="12"
+							cy="12"
+							r="10"
+							stroke="currentColor"
+							stroke-width="3"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
+					</svg>
+				</div>
 
-			<span class="whitespace-nowrap">
+				<div
+					class="absolute inset-0 flex items-center justify-center gap-[3px] transition-all duration-300 {isPlayingAnswer
+						? 'scale-100 opacity-100'
+						: 'scale-50 opacity-0'}"
+				>
+					<div class="wave wave-1"></div>
+					<div class="wave wave-2"></div>
+					<div class="wave wave-3"></div>
+					<div class="wave wave-4"></div>
+				</div>
+			</div>
+
+			<span class="whitespace-nowrap w-24 text-left">
 				{#if isRecording}
 					Listening...
 				{:else if isProcessing}
@@ -325,11 +365,40 @@
 </div>
 
 <style>
-	@keyframes gentle-bounce {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(-2px); }
+	/* Bulletproof CSS Wave Animation */
+	.wave {
+		width: 3px;
+		height: 6px; /* Default height */
+		background-color: white;
+		border-radius: 9999px;
+		animation: wave-anim ease-in-out infinite;
 	}
-	.animate-gentle-bounce {
-		animation: gentle-bounce 2s ease-in-out infinite;
+
+	/* Unique timings for organic bounce */
+	.wave-1 {
+		animation-duration: 0.7s;
+		animation-delay: -0.2s;
+	}
+	.wave-2 {
+		animation-duration: 1s;
+		animation-delay: -0.4s;
+	}
+	.wave-3 {
+		animation-duration: 0.6s;
+		animation-delay: -0.1s;
+	}
+	.wave-4 {
+		animation-duration: 0.8s;
+		animation-delay: -0.3s;
+	}
+
+	@keyframes wave-anim {
+		0%,
+		100% {
+			height: 6px;
+		}
+		50% {
+			height: 22px;
+		}
 	}
 </style>
