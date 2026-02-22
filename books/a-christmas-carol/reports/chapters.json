@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "chapters_detected": 5,
+  "pattern_matches": {
+    "all_caps_header": 5
+  },
+  "fallback_used": false,
+  "warnings": [
+    "Chapter 'Stave One' is 23.0% of book",
+    "Chapter 'Stave Two' is 21.5% of book",
+    "Chapter 'Stave Three' is 29.2% of book"
+  ],
+  "errors": []
+}

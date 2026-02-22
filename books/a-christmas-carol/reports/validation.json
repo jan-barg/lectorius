@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "total_chunks": 329,
+  "issues": [
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 181 chars between a-christmas-carol_ch001_000075 and a-christmas-carol_ch002_000076",
+      "chunk_id": "a-christmas-carol_ch002_000076",
+      "chunk_index": 76
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 158 chars between a-christmas-carol_ch002_000144 and a-christmas-carol_ch003_000145",
+      "chunk_id": "a-christmas-carol_ch003_000145",
+      "chunk_index": 145
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 219 chars between a-christmas-carol_ch003_000244 and a-christmas-carol_ch004_000245",
+      "chunk_id": "a-christmas-carol_ch004_000245",
+      "chunk_index": 245
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 138 chars between a-christmas-carol_ch004_000304 and a-christmas-carol_ch005_000305",
+      "chunk_id": "a-christmas-carol_ch005_000305",
+      "chunk_index": 305
+    }
+  ],
+  "error_count": 0,
+  "warning_count": 4
+}

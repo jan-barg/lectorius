@@ -92,6 +92,10 @@ def run_ingest(
 
             text = _apply_narrative_boundaries(text, llm_analysis, warnings)
             text = _apply_junk_patterns(text, llm_analysis, warnings)
+            text, caption_count = _strip_duplicate_captions(text)
+            if caption_count:
+                logger.info("Stripped %d duplicate illustration captions", caption_count)
+                warnings.append(f"Stripped {caption_count} duplicate illustration captions")
 
         except Exception as e:
             logger.warning("LLM analysis failed, continuing without: %s", e)
@@ -192,6 +196,75 @@ def _find_phrase_fuzzy(text: str, phrase: str) -> int:
     return match.start() if match else -1
 
 
+def _include_preceding_headings(text: str, idx: int) -> int:
+    """Walk backwards from trim point to include short heading paragraphs.
+
+    LLM start markers often point to the first prose line, missing the
+    chapter heading that precedes it (e.g. 'STAVE ONE / MARLEY'S GHOST').
+    Scans back over blank-line-delimited blocks that look like headings.
+    """
+    pos = idx
+    for _ in range(4):  # At most 4 paragraphs back
+        # Find previous paragraph boundary
+        prev_break = text.rfind("\n\n", 0, pos)
+        if prev_break < 0:
+            # Reached start of text — include everything
+            return 0
+        block = text[prev_break + 2 : pos].strip()
+        if not block:
+            pos = prev_break
+            continue
+        # Include if short and heading-like (all lines < 60 chars, total < 200 chars)
+        lines = block.split("\n")
+        if len(block) < 200 and all(len(line.strip()) < 60 for line in lines):
+            pos = prev_break + 2
+        else:
+            break
+    return pos
+
+
+def _strip_duplicate_captions(text: str) -> tuple[str, int]:
+    """Remove duplicated ALL-CAPS lines (illustration caption artifacts).
+
+    EPUBs with illustrations often extract both the caption and the alt-text,
+    producing the same ALL-CAPS line twice in a row separated by a blank line.
+    This safely strips both copies since real chapter headings are never
+    duplicated.
+    """
+    count = 0
+    paragraphs = re.split(r"\n{2,}", text)
+    cleaned: list[str] = []
+    skip_next = False
+
+    for i, para in enumerate(paragraphs):
+        if skip_next:
+            skip_next = False
+            continue
+        stripped = para.strip()
+        if not stripped:
+            cleaned.append(para)
+            continue
+        # Check if this paragraph and the next are duplicates and ALL-CAPS
+        if i + 1 < len(paragraphs):
+            next_stripped = paragraphs[i + 1].strip()
+            # Exact duplicate or one wraps differently (normalize whitespace)
+            this_norm = " ".join(stripped.split())
+            next_norm = " ".join(next_stripped.split())
+            if (
+                this_norm == next_norm
+                and this_norm == this_norm.upper()
+                and len(this_norm) >= 8
+                and any(c.isalpha() for c in this_norm)
+            ):
+                logger.debug("Stripped duplicate caption: '%s'", this_norm[:80])
+                count += 1
+                skip_next = True
+                continue
+        cleaned.append(para)
+
+    return "\n\n".join(cleaned), count
+
+
 def _apply_narrative_boundaries(
     text: str, analysis: LLMAnalysis, warnings: list[str]
 ) -> str:
@@ -202,6 +275,10 @@ def _apply_narrative_boundaries(
         idx = _find_phrase_fuzzy(text, analysis.narrative_start_marker)
         if idx > 0:
             if idx < len(text) * max_trim_ratio:
+                # Walk back over short heading-like paragraphs so we keep
+                # the chapter heading that precedes the first prose line
+                # (e.g. "STAVE ONE\n\nMARLEY'S GHOST" before "Marley was dead...")
+                idx = _include_preceding_headings(text, idx)
                 logger.info("Trimmed %d chars of front matter", idx)
                 warnings.append(f"LLM trimmed {idx} chars of front matter")
                 text = text[idx:]

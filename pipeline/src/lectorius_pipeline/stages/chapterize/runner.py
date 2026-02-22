@@ -47,6 +47,10 @@ def run_chapterize(output_dir: Path, book_id: str) -> ChapterizeReport:
 
     # Filter out mid-sentence false boundaries
     candidates = _validate_chapter_boundaries(candidates, text, warnings)
+
+    # When LLM gave a chapter pattern, use it to filter weak-pattern false positives
+    candidates = _filter_with_llm_hint(candidates, llm_chapter_pattern)
+
     logger.info("Found %d chapter candidates", len(candidates))
 
     # Count pattern matches
@@ -254,6 +258,72 @@ _STRONG_PATTERNS = {
     "part_book",
     "polish_chapter",
 }
+
+# Weak patterns that produce false positives on illustration captions, etc.
+_WEAK_PATTERNS = {"all_caps_header", "roman_numeral_line", "numbered_title"}
+
+
+def _filter_with_llm_hint(
+    candidates: list[ChapterCandidate],
+    llm_pattern: str | None,
+) -> list[ChapterCandidate]:
+    """When LLM pattern is available, filter out weak-pattern false positives.
+
+    If the LLM pattern matched directly (llm_detected candidates exist),
+    drop all all_caps_header noise. Otherwise, extract a stem keyword from
+    the LLM pattern and keep only all_caps_header candidates containing it.
+    """
+    if not llm_pattern:
+        return candidates
+
+    has_llm_matches = any(c.pattern_name == "llm_detected" for c in candidates)
+
+    if has_llm_matches:
+        # LLM pattern worked — drop weak pattern noise entirely
+        filtered = [c for c in candidates if c.pattern_name not in _WEAK_PATTERNS]
+        dropped = len(candidates) - len(filtered)
+        if dropped:
+            logger.info("Dropped %d weak-pattern candidates (LLM pattern matched)", dropped)
+        return filtered
+
+    # LLM pattern didn't match directly — extract stem keyword to filter
+    stem = _extract_pattern_stem(llm_pattern)
+    if not stem:
+        return candidates
+
+    filtered = []
+    for c in candidates:
+        if c.pattern_name in _WEAK_PATTERNS:
+            if stem.lower() in c.title.lower():
+                filtered.append(c)
+            else:
+                logger.debug(
+                    "Filtered out weak candidate: '%s' (no stem '%s')",
+                    c.title,
+                    stem,
+                )
+        else:
+            filtered.append(c)
+
+    dropped = len(candidates) - len(filtered)
+    if dropped:
+        logger.info(
+            "Filtered %d weak-pattern candidates not matching stem '%s'",
+            dropped,
+            stem,
+        )
+    return filtered
+
+
+def _extract_pattern_stem(pattern: str) -> str | None:
+    """Extract the first literal keyword (>=3 alpha chars) from an LLM chapter regex."""
+    # Remove common regex anchors and metacharacters
+    cleaned = re.sub(r"[\^\$\\]", " ", pattern)
+    for word in cleaned.split():
+        word = word.strip("()[]{}.*+?|")
+        if word.isalpha() and len(word) >= 3:
+            return word
+    return None
 
 
 def _validate_chapter_boundaries(

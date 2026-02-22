@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "total_chunks": 329,
+  "avg_chunk_chars": 479.7,
+  "min_chunk_chars": 200,
+  "max_chunk_chars": 1255,
+  "sentence_splitter_used": "regex",
+  "warnings": [],
+  "errors": []
+}

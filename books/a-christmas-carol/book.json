@@ -1,0 +1,11 @@
+{
+  "book_id": "a-christmas-carol",
+  "title": "A Christmas Carol",
+  "author": "Charles Dickens",
+  "language": "en",
+  "year": 1843,
+  "book_type": "fiction",
+  "source": "gutenberg",
+  "source_id": "24022",
+  "status": "available"
+}

@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "source_path": "../source/a-christmas-carol.epub",
+  "chars_extracted": 184708,
+  "chars_after_cleanup": 158539,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": {
+    "narrative_start_marker": "MARLEY was dead, to begin with.",
+    "narrative_end_marker": "And so, as Tiny Tim observed, God bless Us, Every One!",
+    "junk_patterns": [
+      "\".*?\" said .*?\\.",
+      "^\\[Illustration:.*?\\]$",
+      "^See larger view$",
+      "^Frontispiece$",
+      "^Tailpiece.*$",
+      "^Heading to .*$",
+      "^IN COLOUR$",
+      "^IN BLACK AND WHITE$"
+    ],
+    "chapter_heading_pattern": "^STAVE\\s+(?:ONE|TWO|THREE|FOUR|FIVE)—.*$",
+    "chapter_heading_examples": [
+      "STAVE ONE—MARLEY'S GHOST",
+      "STAVE TWO—THE FIRST OF THE THREE SPIRITS",
+      "STAVE THREE—THE SECOND OF THE THREE SPIRITS"
+    ],
+    "anomalies": [
+      "Illustration captions and quotes appear throughout the text",
+      "Quote fragments appear as standalone lines in illustration lists",
+      "Transcriber's note appears at the end after the narrative conclusion"
+    ],
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": 2849
+  },
+  "llm_assist_used": true,
+  "warnings": [
+    "LLM trimmed 4340 chars of front matter",
+    "LLM trimmed 82 chars of back matter",
+    "LLM stripped 4 occurrences of: \".*?\" said .*?\\.",
+    "Stripped 7 duplicate illustration captions"
+  ],
+  "errors": []
+}

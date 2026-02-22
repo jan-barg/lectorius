@@ -42,8 +42,6 @@ Thumbs.db
 # logs
 *.log
 
-# faiss indexes (large binary files)
-*.faiss
 
 #claude
 skills/

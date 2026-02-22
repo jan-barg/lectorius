@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "llm_model": "claude-sonnet-4-20250514",
+  "total_chunks": 329,
+  "checkpoints_generated": 7,
+  "checkpoint_positions": [
+    50,
+    100,
+    150,
+    200,
+    250,
+    300,
+    329
+  ],
+  "warnings": [],
+  "errors": []
+}

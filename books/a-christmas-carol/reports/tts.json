@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "book_id": "a-christmas-carol",
+  "provider": "openai",
+  "voice": "nova",
+  "model": "tts-1",
+  "total_chunks": 329,
+  "completed_chunks": 329,
+  "failed_chunks": 0,
+  "total_duration_ms": 9547725,
+  "warnings": [],
+  "errors": []
+}
