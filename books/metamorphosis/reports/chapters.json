@@ -1,0 +1,15 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "chapters_detected": 3,
+  "pattern_matches": {
+    "llm_detected": 3
+  },
+  "fallback_used": false,
+  "warnings": [
+    "Chapter 'I' is 32.1% of book",
+    "Chapter 'II' is 33.9% of book",
+    "Chapter 'III' is 34.0% of book"
+  ],
+  "errors": []
+}

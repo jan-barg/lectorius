@@ -193,9 +193,9 @@ class ValidateReport(BaseModel):
 
 
 class RAGMeta(BaseModel):
-    """Metadata entry linking FAISS vector to chunk."""
+    """Metadata entry linking vector to chunk."""
 
-    vector_id: int  # index in faiss, 0-indexed
+    vector_id: int  # 0-indexed position in meta.jsonl
     chunk_id: str
     chunk_index: int
     chapter_id: str

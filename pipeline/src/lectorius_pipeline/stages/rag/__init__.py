@@ -1,4 +1,4 @@
-"""RAG stage — embed chunks and build FAISS index."""
+"""RAG stage — embed chunks and upload to Supabase pgvector."""
 
 from .runner import run_rag
 

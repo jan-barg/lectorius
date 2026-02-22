@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "source_path": "source/metamorphosis.epub",
+  "chars_extracted": 138676,
+  "chars_after_cleanup": 118434,
+  "gutenberg_markers_found": true,
+  "toc_detected": false,
+  "toc_char_range": null,
+  "llm_analysis": {
+    "narrative_start_marker": "One morning, when Gregor Samsa woke from troubled dreams, he found himself",
+    "narrative_end_marker": "stretch out her young body.",
+    "junk_patterns": [],
+    "chapter_heading_pattern": "^[I]+$",
+    "chapter_heading_examples": [
+      "I"
+    ],
+    "anomalies": [
+      "Single Roman numeral chapter markers on their own lines",
+      "Translator attribution appears before narrative start"
+    ],
+    "model_used": "claude-sonnet-4-20250514",
+    "tokens_used": 2324
+  },
+  "llm_assist_used": true,
+  "warnings": [
+    "LLM trimmed 0 chars of front matter",
+    "LLM trimmed 0 chars of back matter"
+  ],
+  "errors": []
+}

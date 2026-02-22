@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "embedding_model": "text-embedding-3-small",
+  "total_chunks": 246,
+  "vectors_indexed": 246,
+  "dimensions": 1536,
+  "index_type": "pgvector",
+  "warnings": [],
+  "errors": []
+}

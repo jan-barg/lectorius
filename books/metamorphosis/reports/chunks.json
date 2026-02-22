@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "total_chunks": 246,
+  "avg_chunk_chars": 480.0,
+  "min_chunk_chars": 204,
+  "max_chunk_chars": 812,
+  "sentence_splitter_used": "regex",
+  "warnings": [],
+  "errors": []
+}

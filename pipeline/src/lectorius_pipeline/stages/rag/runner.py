@@ -1,16 +1,14 @@
-"""RAG stage runner — embed chunks and build FAISS index."""
+"""RAG stage runner — embed chunks and upload to Supabase pgvector."""
 
-import json
 import logging
 import os
 from pathlib import Path
 
-import faiss
 import numpy as np
 from supabase import create_client
 
 from lectorius_pipeline.errors import RAGError
-from lectorius_pipeline.schemas import Chunk, RAGMeta, RAGReport
+from lectorius_pipeline.schemas import RAGMeta, RAGReport
 from lectorius_pipeline.utils.io import load_chunks
 
 from .embedder import Embedder
@@ -24,7 +22,7 @@ def run_rag(
     model: str | None = None,
     batch_size: int = 100,
 ) -> RAGReport:
-    """Run the RAG stage: embed all chunks and build a FAISS index.
+    """Run the RAG stage: embed all chunks and upload to Supabase pgvector.
 
     Args:
         book_dir: Path to book output directory.
@@ -64,23 +62,17 @@ def run_rag(
         embeddings = embedder.embed_batch(batch_texts)
         all_embeddings.extend(embeddings)
 
-    logger.info("Embedded %d chunks, building FAISS index", len(all_embeddings))
+    logger.info("Embedded %d chunks, normalizing vectors", len(all_embeddings))
 
-    # Build FAISS index
+    # L2-normalize embeddings for cosine similarity
     embeddings_np = np.array(all_embeddings, dtype=np.float32)
-    faiss.normalize_L2(embeddings_np)
+    norms = np.linalg.norm(embeddings_np, axis=1, keepdims=True)
+    embeddings_np = embeddings_np / norms
 
     dimensions = embeddings_np.shape[1]
-    index = faiss.IndexFlatIP(dimensions)  # inner product = cosine sim after L2 norm
-    index.add(embeddings_np)
 
-    # Save index
     rag_dir = book_dir / "rag"
     rag_dir.mkdir(parents=True, exist_ok=True)
-
-    index_path = rag_dir / "index.faiss"
-    faiss.write_index(index, str(index_path))
-    logger.info("Wrote FAISS index: %d vectors, %d dimensions", index.ntotal, dimensions)
 
     # Write metadata
     meta_path = rag_dir / "meta.jsonl"
@@ -134,9 +126,9 @@ def run_rag(
         book_id=book_id,
         embedding_model=embedder.model,
         total_chunks=len(chunks),
-        vectors_indexed=index.ntotal,
+        vectors_indexed=len(chunks),
         dimensions=dimensions,
-        index_type="IndexFlatIP",
+        index_type="pgvector",
     )
 
     # Write report
@@ -145,7 +137,7 @@ def run_rag(
     report_path = reports_dir / "rag.json"
     report_path.write_text(report.model_dump_json(indent=2))
 
-    logger.info("RAG stage completed: %d vectors indexed", index.ntotal)
+    logger.info("RAG stage completed: %d vectors indexed", len(chunks))
     return report
 
 

@@ -1,0 +1,16 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "llm_model": "claude-sonnet-4-20250514",
+  "total_chunks": 246,
+  "checkpoints_generated": 5,
+  "checkpoint_positions": [
+    50,
+    100,
+    150,
+    200,
+    246
+  ],
+  "warnings": [],
+  "errors": []
+}

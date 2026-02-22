@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "book_id": "metamorphosis",
+  "total_chunks": 246,
+  "issues": [
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 119 chars between metamorphosis_ch001_000075 and metamorphosis_ch002_000076",
+      "chunk_id": "metamorphosis_ch002_000076",
+      "chunk_index": 76
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 127 chars between metamorphosis_ch002_000161 and metamorphosis_ch003_000162",
+      "chunk_id": "metamorphosis_ch003_000162",
+      "chunk_index": 162
+    }
+  ],
+  "error_count": 0,
+  "warning_count": 2
+}
