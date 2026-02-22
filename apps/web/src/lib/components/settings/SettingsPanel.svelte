@@ -10,13 +10,13 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
 {#if open}
 	<!-- Backdrop -->
 	<button
 		class="fixed inset-0 z-40 bg-black/50"
-		on:click={onClose}
+		onclick={onClose}
 		aria-label="Close settings"
 		transition:fade={{ duration: 200 }}
 	></button>
@@ -28,7 +28,7 @@
 	>
 		<div class="mb-6 flex items-center justify-between">
 			<h2 class="text-lg font-semibold text-text">Settings</h2>
-			<button class="text-muted hover:text-text" on:click={onClose} aria-label="Close">
+			<button class="text-muted hover:text-text" onclick={onClose} aria-label="Close">
 				<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
 				</svg>

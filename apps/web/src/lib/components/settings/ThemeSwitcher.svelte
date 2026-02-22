@@ -20,7 +20,7 @@
 		<button
 			class="relative z-10 flex-1 rounded-md px-4 py-1.5 text-sm font-medium transition-colors duration-200
 				{current === opt.value ? 'text-white' : 'text-muted hover:text-text'}"
-			on:click={() => settings.setTheme(opt.value)}
+			onclick={() => settings.setTheme(opt.value)}
 		>
 			{opt.label}
 		</button>

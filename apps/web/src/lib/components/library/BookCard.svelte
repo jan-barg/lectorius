@@ -46,8 +46,8 @@
 {#if isComingSoon}
 	<div
 		class="group relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(124,58,237,0.4)] cursor-not-allowed"
-		on:mouseenter={() => (hovering = true)}
-		on:mouseleave={() => (hovering = false)}
+		onmouseenter={() => (hovering = true)}
+		onmouseleave={() => (hovering = false)}
 		role="img"
 		aria-label="{book.title} — coming soon"
 	>
@@ -75,8 +75,8 @@
 	<a
 		href="/book/{book.book_id}"
 		class="group block relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(124,58,237,0.4)]"
-		on:mouseenter={() => (hovering = true)}
-		on:mouseleave={() => (hovering = false)}
+		onmouseenter={() => (hovering = true)}
+		onmouseleave={() => (hovering = false)}
 	>
 		<div
 			class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 z-10"
