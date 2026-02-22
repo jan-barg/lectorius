@@ -6,13 +6,8 @@
 
 	export let onSkip: (seconds: number) => void;
 
-	let isPlaying = false;
-	let speed: PlaybackSpeed = 1;
-
-	playback.subscribe((s) => {
-		isPlaying = s.is_playing;
-		speed = s.playback_speed;
-	});
+	$: isPlaying = $playback.is_playing;
+	$: speed = $playback.playback_speed;
 
 	function togglePlay() {
 		if (isPlaying) {

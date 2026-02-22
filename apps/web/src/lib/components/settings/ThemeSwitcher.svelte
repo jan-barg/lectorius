@@ -7,10 +7,7 @@
 		{ value: 'dark', label: 'Dark' }
 	];
 
-	let current: Theme = 'system';
-	settings.subscribe((s) => {
-		current = s.theme;
-	});
+	$: current = $settings.theme;
 </script>
 
 <div class="relative flex rounded-lg bg-background p-1">

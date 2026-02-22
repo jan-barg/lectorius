@@ -7,13 +7,8 @@
 	export let chunks: Chunk[];
 	export let onSeek: (chunkIndex: number, offsetMs: number) => void;
 
-	let chunkIndex = 1;
-	let chunkTimeMs = 0;
-
-	playback.subscribe((s) => {
-		chunkIndex = s.chunk_index;
-		chunkTimeMs = s.chunk_time_ms;
-	});
+	$: chunkIndex = $playback.chunk_index;
+	$: chunkTimeMs = $playback.chunk_time_ms;
 
 	// Sort playback map by chunk_index for cumulative duration calculations
 	$: sortedMap = [...playbackMap].sort(
