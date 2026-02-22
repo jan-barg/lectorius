@@ -121,6 +121,21 @@
 			});
 			console.log(`[qa] Stream response received: ${Date.now() - t0}ms`);
 
+			if (!response.ok) {
+				console.error(`[qa] API error: ${response.status} ${response.statusText}`);
+				let errorData: Record<string, string> | null = null;
+				try {
+					errorData = await response.json();
+				} catch {}
+				if (errorData?.fallback_audio_url) {
+					playFallbackAudio(errorData.fallback_audio_url);
+				} else {
+					qa.setError(errorData?.error || "Something went wrong");
+					resumeAfterDelay();
+				}
+				return;
+			}
+
 			await handleStreamingResponse(response);
 		} catch (e) {
 			if (e instanceof DOMException && e.name === "AbortError") return;
