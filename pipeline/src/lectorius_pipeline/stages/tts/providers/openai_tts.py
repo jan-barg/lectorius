@@ -8,17 +8,13 @@ from .base import TTSProvider
 
 logger = logging.getLogger(__name__)
 
-# Available voices: alloy, echo, fable, onyx, nova, shimmer
-DEFAULT_VOICE = "alloy"
-DEFAULT_MODEL = "tts-1"
+# Available voices: alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse
+DEFAULT_VOICE = "nova"
+DEFAULT_MODEL = "gpt-4o-mini-tts"
 
 
 class OpenAITTS(TTSProvider):
-    """OpenAI text-to-speech provider.
-
-    Uses the OpenAI TTS API. Good for development and testing (~$15/1M chars).
-    For higher quality, use model="tts-1-hd" (~$30/1M chars).
-    """
+    """OpenAI text-to-speech provider using gpt-4o-mini-tts."""
 
     def __init__(
         self,

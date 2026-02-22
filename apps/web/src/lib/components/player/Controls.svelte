@@ -47,7 +47,7 @@
 
 	<button
 		onclick={togglePlay}
-		class="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] transition-all hover:bg-accent/80 hover:scale-105 active:scale-95"
+		class="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-[0_0_20px_rgba(var(--color-accent),0.4)] transition-all hover:bg-accent/80 hover:scale-105 active:scale-95"
 		aria-label={isPlaying ? "Pause" : "Play"}
 	>
 		{#if isPlaying}

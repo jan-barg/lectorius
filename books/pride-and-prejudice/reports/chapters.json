@@ -1,10 +1,9 @@
 {
   "success": true,
   "book_id": "pride-and-prejudice",
-  "chapters_detected": 61,
+  "chapters_detected": 62,
   "pattern_matches": {
-    "llm_detected": 56,
-    "chapter_numbered": 4
+    "chapter_numbered": 61
   },
   "fallback_used": false,
   "warnings": [],

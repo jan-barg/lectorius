@@ -7,10 +7,6 @@ interface Settings {
     theme: Theme;
 }
 
-const defaultSettings: Settings = {
-    theme: 'system'
-};
-
 function createSettingsStore() {
     const stored = browser ? localStorage.getItem('lectorius_theme') : null;
     const initialTheme: Theme = stored === 'light' || stored === 'dark' ? stored : 'system';

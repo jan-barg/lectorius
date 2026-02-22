@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "pride-and-prejudice",
+  "embedding_model": "text-embedding-3-small",
+  "total_chunks": 1448,
+  "vectors_indexed": 1448,
+  "dimensions": 1536,
+  "index_type": "pgvector",
+  "warnings": [],
+  "errors": []
+}

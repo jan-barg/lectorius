@@ -173,12 +173,7 @@
 				// Acquire mic stream on first play (user gesture satisfies browser requirement)
 				if (!streamAcquired) {
 					streamAcquired = true;
-					recorder.acquireStream().catch((e) => {
-						console.warn(
-							"[player] Mic stream acquire failed (non-blocking):",
-							e,
-						);
-					});
+					recorder.acquireStream().catch(() => {});
 				}
 
 				if (

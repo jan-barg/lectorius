@@ -13,11 +13,9 @@ export async function getCachedBook(bookId: string): Promise<GetBookResponse | n
 	const cached = cache.get(bookId);
 
 	if (cached && Date.now() - cached.fetchedAt < TTL_MS) {
-		console.log(`[cache] Hit for ${bookId}`);
 		return cached.data;
 	}
 
-	console.log(`[cache] Miss for ${bookId}, fetching...`);
 	try {
 		const data = await getBookDetail(bookId);
 		cache.set(bookId, { data, fetchedAt: Date.now() });
@@ -25,8 +23,4 @@ export async function getCachedBook(bookId: string): Promise<GetBookResponse | n
 	} catch {
 		return null;
 	}
-}
-
-export function invalidateCache(bookId: string): void {
-	cache.delete(bookId);
 }

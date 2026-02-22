@@ -88,17 +88,6 @@ export interface PlaybackMapEntry {
 }
 
 // =============================================================================
-// rag metadata
-// =============================================================================
-
-export interface RAGMeta {
-	vector_id: number;
-	chunk_id: string;
-	chunk_index: number;
-	chapter_id: string;
-}
-
-// =============================================================================
 // memory checkpoints
 // =============================================================================
 
@@ -174,12 +163,8 @@ export interface BookListItem {
 }
 
 // =============================================================================
-// api request/response types
+// api response types
 // =============================================================================
-
-export interface GetBooksResponse {
-	books: BookListItem[];
-}
 
 export interface GetBookResponse {
 	book: BookMeta;
@@ -189,27 +174,3 @@ export interface GetBookResponse {
 	checkpoints: MemoryCheckpoint[];
 	cover_video_url: string | null;
 }
-
-export interface AskRequest {
-	book_id: string;
-	chunk_index: number;
-	chunk_time_ms: number;
-	audio: Blob;
-}
-
-export interface AskResponseSuccess {
-	success: true;
-	question_text: string;
-	answer_text: string;
-	answer_audio: string;
-}
-
-export type FallbackAudioId = 'error' | 'book_only' | 'no_context_yet';
-
-export interface AskResponseError {
-	success: false;
-	error: string;
-	fallback_audio_id: FallbackAudioId;
-}
-
-export type AskResponse = AskResponseSuccess | AskResponseError;

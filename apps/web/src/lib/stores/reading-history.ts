@@ -42,7 +42,3 @@ export function updateReadingHistory(
 export function getReadingHistory(): ReadingHistoryEntry[] {
 	return Object.values(readAll()).sort((a, b) => b.last_played - a.last_played);
 }
-
-export function getBookProgress(bookId: string): ReadingHistoryEntry | null {
-	return readAll()[bookId] ?? null;
-}

@@ -9,6 +9,9 @@ import { queryRAG } from '$lib/server/rag';
 import { buildSystemPrompt, buildUserMessage, shouldUseRAG } from '$lib/server/prompts';
 import { generateSpeech } from '$lib/server/tts';
 
+const debug = env.DEBUG_LOGGING === 'true';
+function debugLog(...args: unknown[]) { if (debug) console.log(...args); }
+
 function fallbackUrl(id: string): string {
 	return `${env.SUPABASE_URL}/storage/v1/object/public/system/audio/${id}.mp3`;
 }
@@ -26,7 +29,7 @@ function sseError(error: string, fallbackId: string): Response {
 
 export const POST: RequestHandler = async ({ request }) => {
 	const t0 = Date.now();
-	console.log(`[stream] === Starting streaming Q&A ===`);
+	debugLog(`[stream] === Starting streaming Q&A ===`);
 
 	const { book_id, chunk_index, audio_base64 } = await request.json();
 
@@ -63,7 +66,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return sseError('Not enough context', 'no_context_yet');
 	}
 
-	console.log(`[stream] Question: "${question}" (${Date.now() - t0}ms)`);
+	debugLog(`[stream] Question: "${question}" (${Date.now() - t0}ms)`);
 
 	// 2. Context assembly
 	const recentChunks = getRecentChunks(chunks, playback_map, chunk_index, 60000);
@@ -91,7 +94,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	);
 	const userMessage = buildUserMessage(recentText, checkpoint, ragChunks, question);
 
-	console.log(`[stream] Context assembled (${Date.now() - t0}ms)`);
+	debugLog(`[stream] Context assembled (${Date.now() - t0}ms)`);
 
 	// 3. Stream Claude → sentence-by-sentence TTS
 	const stream = new ReadableStream({
@@ -126,7 +129,7 @@ export const POST: RequestHandler = async ({ request }) => {
 						buffer = remaining;
 
 						for (const sentence of extracted) {
-							console.log(
+							debugLog(
 								`[stream] TTS: "${sentence.substring(0, 50)}" (${Date.now() - t0}ms)`
 							);
 							const audio = await generateSpeech(sentence);
@@ -137,14 +140,14 @@ export const POST: RequestHandler = async ({ request }) => {
 
 				// Flush remaining text
 				if (buffer.trim()) {
-					console.log(
+					debugLog(
 						`[stream] TTS remaining: "${buffer.trim().substring(0, 50)}" (${Date.now() - t0}ms)`
 					);
 					const audio = await generateSpeech(buffer.trim());
 					send({ type: 'audio', text: buffer.trim(), audio });
 				}
 
-				console.log(`[stream] Complete (${Date.now() - t0}ms)`);
+				debugLog(`[stream] Complete (${Date.now() - t0}ms)`);
 				send({ type: 'done', full_answer: fullAnswer });
 				controller.close();
 			} catch (error: unknown) {

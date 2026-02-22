@@ -19,8 +19,6 @@ function createQAStore() {
 				last_question: question,
 				last_answer: answer
 			})),
-		finishPlayback: () =>
-			update((s) => ({ ...s, is_playing_answer: false })),
 		setError: (error: string) =>
 			update((s) => ({ ...s, is_processing: false, is_playing_answer: false, error })),
 		reset: () => set(DEFAULT_QA_STATE)

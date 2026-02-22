@@ -15,8 +15,6 @@
 	let isPlayingAudio = false;
 	let streamDone = false;
 	let abortController: AbortController | null = null;
-	let requestStartTime = 0;
-	let firstAudioPlayed = false;
 
 	let isRecording = false;
 	let isProcessing = false;
@@ -38,14 +36,6 @@
 		isPlayingAudio = true;
 		const audioBase64 = audioQueue.shift()!;
 		answerAudio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-		answerAudio.onplay = () => {
-			if (!firstAudioPlayed) {
-				console.log(
-					`[qa] TIME TO FIRST AUDIO: ${Date.now() - requestStartTime}ms`,
-				);
-				firstAudioPlayed = true;
-			}
-		};
 		answerAudio.onended = playNextAudio;
 		answerAudio.onerror = () => {
 			console.error("[audio] Playback error");
@@ -69,16 +59,9 @@
 	async function handlePointerDown() {
 		if (isRecording || isProcessing || isPlayingAnswer) return;
 
-		const t0 = Date.now();
-		console.log(`[qa] Button pressed`);
-
 		try {
 			playback.pause();
-			console.log(`[qa] Playback paused: ${Date.now() - t0}ms`);
-
 			await recorder.startRecording();
-			console.log(`[qa] Recording started: ${Date.now() - t0}ms`);
-
 			qa.startRecording();
 		} catch (e) {
 			console.error("Failed to start recording:", e);
@@ -89,21 +72,11 @@
 	async function handlePointerUp() {
 		if (!isRecording) return;
 
-		requestStartTime = Date.now();
-		firstAudioPlayed = false;
-		const t0 = requestStartTime;
-		console.log(`[qa] Button released`);
-
 		try {
 			const blob = await recorder.stopRecording();
-			console.log(
-				`[qa] Recording stopped: ${Date.now() - t0}ms, size: ${blob.size} bytes`,
-			);
-
 			qa.stopRecording();
 
 			const audio_base64 = await blobToBase64(blob);
-			console.log(`[qa] Base64 converted: ${Date.now() - t0}ms`);
 
 			const state = get(playback);
 
@@ -119,7 +92,6 @@
 				}),
 				signal: abortController.signal,
 			});
-			console.log(`[qa] Stream response received: ${Date.now() - t0}ms`);
 
 			if (!response.ok) {
 				console.error(`[qa] API error: ${response.status} ${response.statusText}`);
@@ -176,13 +148,9 @@
 
 					if (data.type === "question") {
 						questionText = data.text;
-						console.log(`[stream] Question: ${data.text}`);
 					}
 
 					if (data.type === "audio") {
-						console.log(
-							`[stream] Audio chunk: "${data.text.substring(0, 30)}..."`,
-						);
 						audioQueue.push(data.audio);
 
 						if (!firstAudioReceived) {
@@ -196,7 +164,6 @@
 					}
 
 					if (data.type === "done") {
-						console.log(`[stream] Stream complete`);
 						streamDone = true;
 						checkComplete();
 					}
@@ -284,10 +251,10 @@
 		disabled={isProcessing || isPlayingAnswer}
 		class="relative z-10 flex items-center justify-center gap-3 px-8 py-4 w-48 rounded-full font-bold text-lg tracking-wide overflow-hidden transition-all duration-500 bg-surface text-text border border-white/5
             {!isRecording && !isProcessing && !isPlayingAnswer
-			? 'hover:bg-surface/80 hover:shadow-[0_0_30px_rgba(124,58,237,0.3)] active:scale-95'
+			? 'hover:bg-surface/80 hover:shadow-[0_0_30px_rgba(var(--color-accent),0.3)] active:scale-95'
 			: ''}
             {isProcessing
-			? 'shadow-[0_0_40px_rgba(124,58,237,0.6)] border-accent/50'
+			? 'shadow-[0_0_40px_rgba(var(--color-accent),0.6)] border-accent/50'
 			: ''}"
 		aria-label={isRecording ? "Release to send" : "Hold to ask a question"}
 	>

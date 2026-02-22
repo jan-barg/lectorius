@@ -17,14 +17,10 @@ export class Recorder {
 	 */
 	async acquireStream(): Promise<void> {
 		if (this.stream && this.isStreamAlive()) {
-			console.log(`[recorder] Stream already acquired`);
 			return;
 		}
 
-		const t0 = Date.now();
-		console.log(`[recorder] Acquiring stream...`);
 		this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-		console.log(`[recorder] Stream acquired: ${Date.now() - t0}ms`);
 	}
 
 	/**
@@ -37,53 +33,37 @@ export class Recorder {
 
 	/**
 	 * Warm up stream + MediaRecorder on hover/touch so startRecording() is instant.
-	 * Fire-and-forget — errors are logged but not thrown.
+	 * Fire-and-forget — errors are silently ignored.
 	 */
 	warmUp(): void {
 		if (this.warmRecorder || this.mediaRecorder?.state === 'recording') return;
 
-		const t0 = Date.now();
-		console.log(`[recorder] Warming up...`);
-
 		const doWarmUp = async () => {
 			if (!this.stream || !this.isStreamAlive()) {
 				this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				console.log(`[recorder] Stream acquired: ${Date.now() - t0}ms`);
 			}
 
 			this.warmRecorder = new MediaRecorder(this.stream, { mimeType: MIME_TYPE });
-			console.log(`[recorder] MediaRecorder pre-created: ${Date.now() - t0}ms`);
 		};
 
-		doWarmUp().catch((e) => {
-			console.warn(`[recorder] Warm-up failed:`, e);
-		});
+		doWarmUp().catch(() => {});
 	}
 
 	async startRecording(): Promise<void> {
-		const t0 = Date.now();
-		console.log(`[recorder] Starting...`);
-
 		this.chunks = [];
 
 		// Use pre-warmed MediaRecorder if available
 		if (this.warmRecorder && this.stream && this.isStreamAlive()) {
-			console.log(`[recorder] Using warm MediaRecorder: ${Date.now() - t0}ms`);
 			this.mediaRecorder = this.warmRecorder;
 			this.warmRecorder = null;
 		} else {
 			// Fall back to full initialization
 			this.warmRecorder = null;
 			if (!this.stream || !this.isStreamAlive()) {
-				console.log(`[recorder] No pre-acquired stream, acquiring now...`);
 				this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-				console.log(`[recorder] getUserMedia (fallback): ${Date.now() - t0}ms`);
-			} else {
-				console.log(`[recorder] Using pre-acquired stream: ${Date.now() - t0}ms`);
 			}
 
 			this.mediaRecorder = new MediaRecorder(this.stream, { mimeType: MIME_TYPE });
-			console.log(`[recorder] MediaRecorder created: ${Date.now() - t0}ms`);
 		}
 
 		this.mediaRecorder.ondataavailable = (e) => {
@@ -92,7 +72,6 @@ export class Recorder {
 
 		return new Promise((resolve) => {
 			this.mediaRecorder!.onstart = () => {
-				console.log(`[recorder] Actually recording: ${Date.now() - t0}ms`);
 				resolve();
 			};
 			this.mediaRecorder!.start();
@@ -100,15 +79,11 @@ export class Recorder {
 	}
 
 	async stopRecording(): Promise<Blob> {
-		const t0 = Date.now();
-		console.log(`[recorder] Stopping...`);
-
 		return new Promise((resolve, reject) => {
 			if (!this.mediaRecorder) return reject(new Error('No recording'));
 
 			this.mediaRecorder.onstop = () => {
 				const blob = new Blob(this.chunks, { type: 'audio/webm' });
-				console.log(`[recorder] Blob created: ${Date.now() - t0}ms, chunks: ${this.chunks.length}, size: ${blob.size} bytes`);
 				// Only clean up the recorder, keep the stream for reuse
 				this.mediaRecorder = null;
 				this.chunks = [];
@@ -138,7 +113,6 @@ export class Recorder {
 		this.warmRecorder = null;
 		this.stream?.getTracks().forEach((t) => t.stop());
 		this.stream = null;
-		console.log(`[recorder] Warm stream released`);
 	}
 
 	/**
@@ -148,7 +122,6 @@ export class Recorder {
 		this.cancelRecording();
 		this.stream?.getTracks().forEach((t) => t.stop());
 		this.stream = null;
-		console.log(`[recorder] Stream released`);
 	}
 }
 

@@ -9,13 +9,6 @@
 	let hovering = false;
 
 	$: isComingSoon = book.status === "coming_soon";
-
-	function formatDuration(ms: number): string {
-		const hours = Math.floor(ms / 3600000);
-		const minutes = Math.floor((ms % 3600000) / 60000);
-		if (hours > 0) return `${hours}h ${minutes}m`;
-		return `${minutes}m`;
-	}
 </script>
 
 {#snippet cardContent()}
@@ -45,7 +38,7 @@
 
 {#if isComingSoon}
 	<div
-		class="group relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(124,58,237,0.4)] cursor-not-allowed"
+		class="group relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(var(--color-accent),0.4)] cursor-not-allowed"
 		onmouseenter={() => (hovering = true)}
 		onmouseleave={() => (hovering = false)}
 		role="img"
@@ -74,7 +67,7 @@
 {:else}
 	<a
 		href="/book/{book.book_id}"
-		class="group block relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(124,58,237,0.4)]"
+		class="group block relative aspect-[3/4] w-48 sm:w-56 rounded-2xl overflow-hidden shadow-lg transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(var(--color-accent),0.4)]"
 		onmouseenter={() => (hovering = true)}
 		onmouseleave={() => (hovering = false)}
 	>

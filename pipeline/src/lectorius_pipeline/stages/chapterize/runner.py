@@ -1,6 +1,5 @@
 """Chapterize stage runner."""
 
-import json
 import logging
 import re
 from collections import Counter

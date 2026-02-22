@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "book_id": "pride-and-prejudice",
+  "provider": "openai",
+  "voice": "nova",
+  "model": "gpt-4o-mini-tts",
+  "total_chunks": 1448,
+  "completed_chunks": 1448,
+  "failed_chunks": 0,
+  "total_duration_ms": 41649562,
+  "warnings": [],
+  "errors": []
+}

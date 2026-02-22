@@ -1,37 +1,44 @@
 {
   "success": true,
   "book_id": "pride-and-prejudice",
-  "total_chunks": 1398,
+  "total_chunks": 1448,
   "issues": [
     {
       "severity": "WARN",
       "check": "offset_gap",
-      "message": "Gap of 118 chars between pride-and-prejudice_ch016_000293 and pride-and-prejudice_ch017_000294",
-      "chunk_id": "pride-and-prejudice_ch017_000294",
-      "chunk_index": 294
+      "message": "Gap of 110 chars between pride-and-prejudice_ch001_000050 and pride-and-prejudice_ch002_000051",
+      "chunk_id": "pride-and-prejudice_ch002_000051",
+      "chunk_index": 51
     },
     {
       "severity": "WARN",
       "check": "offset_gap",
-      "message": "Gap of 152 chars between pride-and-prejudice_ch018_000373 and pride-and-prejudice_ch019_000374",
-      "chunk_id": "pride-and-prejudice_ch019_000374",
-      "chunk_index": 374
+      "message": "Gap of 118 chars between pride-and-prejudice_ch017_000343 and pride-and-prejudice_ch018_000344",
+      "chunk_id": "pride-and-prejudice_ch018_000344",
+      "chunk_index": 344
     },
     {
       "severity": "WARN",
       "check": "offset_gap",
-      "message": "Gap of 138 chars between pride-and-prejudice_ch043_000930 and pride-and-prejudice_ch044_000931",
-      "chunk_id": "pride-and-prejudice_ch044_000931",
-      "chunk_index": 931
+      "message": "Gap of 152 chars between pride-and-prejudice_ch019_000423 and pride-and-prejudice_ch020_000424",
+      "chunk_id": "pride-and-prejudice_ch020_000424",
+      "chunk_index": 424
     },
     {
       "severity": "WARN",
       "check": "offset_gap",
-      "message": "Gap of 130 chars between pride-and-prejudice_ch047_001055 and pride-and-prejudice_ch048_001056",
-      "chunk_id": "pride-and-prejudice_ch048_001056",
-      "chunk_index": 1056
+      "message": "Gap of 138 chars between pride-and-prejudice_ch044_000980 and pride-and-prejudice_ch045_000981",
+      "chunk_id": "pride-and-prejudice_ch045_000981",
+      "chunk_index": 981
+    },
+    {
+      "severity": "WARN",
+      "check": "offset_gap",
+      "message": "Gap of 130 chars between pride-and-prejudice_ch048_001105 and pride-and-prejudice_ch049_001106",
+      "chunk_id": "pride-and-prejudice_ch049_001106",
+      "chunk_index": 1106
     }
   ],
   "error_count": 0,
-  "warning_count": 4
+  "warning_count": 5
 }

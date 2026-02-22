@@ -1,8 +1,8 @@
 {
   "book_id": "pride-and-prejudice",
   "version": 1,
-  "created_at": "2026-02-07T04:26:37.276440",
-  "updated_at": "2026-02-07T04:26:37.276446",
+  "created_at": "2026-02-22T05:28:46.121090Z",
+  "updated_at": "2026-02-22T05:28:46.121093Z",
   "pipeline_version": "1.0.0",
   "stages_completed": [
     "ingest",
@@ -20,9 +20,9 @@
     "embedding_model": ""
   },
   "stats": {
-    "chapters": 61,
-    "chunks": 1398,
+    "chapters": 62,
+    "chunks": 1448,
     "total_audio_duration_ms": 0,
-    "total_chars": 688194
+    "total_chars": 713158
   }
 }

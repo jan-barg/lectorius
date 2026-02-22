@@ -29,7 +29,7 @@
 				onclick={() => handleClick(chapter.chapter_id)}
 				class="group flex w-full items-center rounded-xl px-4 py-3 text-left text-sm transition-all duration-200
                     {chapter.chapter_id === currentChapterId
-					? 'bg-accent/15 border border-accent/20 text-text shadow-[0_4px_16px_rgba(124,58,237,0.1)] backdrop-blur-md'
+					? 'bg-accent/15 border border-accent/20 text-text shadow-[0_4px_16px_rgba(var(--color-accent),0.1)] backdrop-blur-md'
 					: 'border border-transparent text-muted hover:bg-surface/50 hover:text-text hover:border-white/5'}"
 				aria-label="Jump to {chapter.title}"
 			>

@@ -1,7 +1,6 @@
 """TTS stage runner — generate audio for each chunk."""
 
 import asyncio
-import json
 import logging
 import os
 from pathlib import Path
@@ -249,13 +248,12 @@ def _build_playback_map(
     """Build sorted playback map from progress data."""
     entries: list[PlaybackMapEntry] = []
 
-    for chunk in chunks:
-        if chunk.chunk_id not in progress.completed_ids:
-            continue
+    completed_by_id = {e.chunk_id: e for e in progress.completed_entries}
 
-        completed = [
-            e for e in progress.completed_entries if e.chunk_id == chunk.chunk_id
-        ][0]
+    for chunk in chunks:
+        completed = completed_by_id.get(chunk.chunk_id)
+        if completed is None:
+            continue
 
         entries.append(
             PlaybackMapEntry(

@@ -131,7 +131,7 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-accent shadow-[0_0_12px_rgba(124,58,237,0.8)] transition-[width] duration-150"
+			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-accent shadow-[0_0_12px_rgba(var(--color-accent),0.8)] transition-[width] duration-150"
 			style="width: {progress}%"
 		>
 			<div
