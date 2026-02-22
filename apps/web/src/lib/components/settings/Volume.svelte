@@ -120,6 +120,7 @@
             ? 'w-24 opacity-100 pr-2'
             : 'w-0 opacity-0'}"
     >
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             bind:this={trackEl}
             class="relative w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full cursor-pointer"
