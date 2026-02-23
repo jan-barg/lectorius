@@ -42,3 +42,9 @@ export function updateReadingHistory(
 export function getReadingHistory(): ReadingHistoryEntry[] {
 	return Object.values(readAll()).sort((a, b) => b.last_played - a.last_played);
 }
+
+export function clearAllReadingHistory(): void {
+	if (!browser) return;
+	localStorage.removeItem(STORAGE_KEY);
+	window.dispatchEvent(new CustomEvent('readinghistorychange'));
+}

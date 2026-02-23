@@ -26,7 +26,7 @@
 		<a href="/" class="text-lg font-bold text-text">lectorius</a>
 		<button
 			class="rounded-lg p-2 text-muted transition-colors hover:bg-surface hover:text-text"
-			on:click={() => (settingsOpen = true)}
+			onclick={() => (settingsOpen = true)}
 			aria-label="Settings"
 		>
 			<svg

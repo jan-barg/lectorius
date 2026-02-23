@@ -5,15 +5,20 @@
 	import ReadSomethingNew from '$lib/components/library/ReadSomethingNew.svelte';
 	import type { BookListItem } from '$lib/types';
 	import { getReadingHistory, type ReadingHistoryEntry } from '$lib/stores/reading-history';
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 
 	let books: BookListItem[] = [];
 	let history: ReadingHistoryEntry[] = [];
 	let loading = true;
 	let error: string | null = null;
 
-	onMount(async () => {
+	function refreshHistory() {
 		history = getReadingHistory();
+	}
+
+	onMount(async () => {
+		refreshHistory();
+		window.addEventListener('readinghistorychange', refreshHistory);
 		try {
 			const res = await fetch('/api/books');
 			const data = await res.json();
@@ -22,6 +27,12 @@
 			error = 'Failed to load books';
 		} finally {
 			loading = false;
+		}
+	});
+
+	onDestroy(() => {
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('readinghistorychange', refreshHistory);
 		}
 	});
 
