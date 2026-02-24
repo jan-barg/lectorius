@@ -1,4 +1,5 @@
 import type { PlaybackMapEntry } from '$lib/types';
+import { toPerceptualVolume } from '$lib/utils/audio';
 
 interface AudioEngineCallbacks {
 	onChunkEnd: () => void;
@@ -77,7 +78,7 @@ export class AudioEngine {
 	}
 
 	setVolume(volume: number): void {
-		this.audio.volume = Math.max(0, Math.min(1, volume));
+		this.audio.volume = toPerceptualVolume(volume * 100);
 	}
 
 	destroy(): void {

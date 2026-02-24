@@ -1,4 +1,4 @@
-import { displayToActualVolume } from '$lib/stores/music';
+import { toPerceptualVolume } from '$lib/utils/audio';
 
 interface MusicAudioCallbacks {
 	onTimeUpdate: (timeSeconds: number) => void;
@@ -10,6 +10,7 @@ export class MusicAudioEngine {
 	private audio: HTMLAudioElement;
 	private preloadAudio: HTMLAudioElement | null = null;
 	private callbacks: MusicAudioCallbacks;
+	private fadeInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor(callbacks: MusicAudioCallbacks) {
 		this.audio = new Audio();
@@ -39,7 +40,37 @@ export class MusicAudioEngine {
 	}
 
 	setVolume(displayVolume: number): void {
-		this.audio.volume = displayToActualVolume(displayVolume);
+		this.cancelFade();
+		this.audio.volume = toPerceptualVolume(displayVolume, 0.6);
+	}
+
+	fadeTo(targetVolume: number, durationMs: number): void {
+		this.cancelFade();
+		const start = this.audio.volume;
+		const diff = targetVolume - start;
+		if (Math.abs(diff) < 0.001) {
+			this.audio.volume = targetVolume;
+			return;
+		}
+		const stepMs = 16;
+		const steps = Math.ceil(durationMs / stepMs);
+		let step = 0;
+		this.fadeInterval = setInterval(() => {
+			step++;
+			if (step >= steps) {
+				this.audio.volume = targetVolume;
+				this.cancelFade();
+				return;
+			}
+			this.audio.volume = start + diff * (step / steps);
+		}, stepMs);
+	}
+
+	private cancelFade(): void {
+		if (this.fadeInterval !== null) {
+			clearInterval(this.fadeInterval);
+			this.fadeInterval = null;
+		}
 	}
 
 	preload(src: string): void {
@@ -52,6 +83,7 @@ export class MusicAudioEngine {
 	}
 
 	destroy(): void {
+		this.cancelFade();
 		this.audio.pause();
 		this.audio.removeEventListener('ended', this.handleEnded);
 		this.audio.removeEventListener('timeupdate', this.handleTimeUpdate);

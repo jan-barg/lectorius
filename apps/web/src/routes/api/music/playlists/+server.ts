@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 
 const BUCKET = 'system';
 
-function prettifyName(filename: string): string {
+function prettifyTitle(filename: string): string {
 	return filename
 		.replace(/\.mp3$/i, '')
 		.replace(/^\d+[-_]?\s*/, '')
@@ -19,41 +19,38 @@ export const GET: RequestHandler = async () => {
 		const supabase = getSupabase();
 		const storageBase = `${env.SUPABASE_URL}/storage/v1/object/public/${BUCKET}`;
 
-		const { data: folders, error: listError } = await supabase.storage
-			.from(BUCKET)
-			.list('music/general', { limit: 100 });
+		const { data: rows, error: dbError } = await supabase
+			.from('playlists')
+			.select('playlist_id, name, type, book_id, folder_path');
 
-		if (listError || !folders) {
-			return error(500, `Failed to list playlists: ${listError?.message}`);
+		if (dbError || !rows) {
+			return error(500, `Failed to query playlists: ${dbError?.message}`);
 		}
 
-		const playlistFolders = folders.filter((f) => f.id === null);
 		const playlists = [];
 
-		for (const folder of playlistFolders) {
+		for (const row of rows) {
 			const { data: files, error: filesError } = await supabase.storage
 				.from(BUCKET)
-				.list(`music/general/${folder.name}`, { limit: 100 });
+				.list(row.folder_path, { limit: 200 });
 
 			if (filesError || !files) continue;
 
 			const songs = files
 				.filter((f) => f.name.endsWith('.mp3'))
 				.sort((a, b) => a.name.localeCompare(b.name))
-				.map((f, i) => ({
-					song_id: `${folder.name}-${i}`,
-					title: prettifyName(f.name),
-					duration_ms: 0,
-					file_path: `${storageBase}/music/general/${folder.name}/${encodeURIComponent(f.name)}`
+				.map((f) => ({
+					title: prettifyTitle(f.name),
+					file_url: `${storageBase}/${row.folder_path}/${encodeURIComponent(f.name)}`
 				}));
 
 			if (songs.length === 0) continue;
 
 			playlists.push({
-				playlist_id: folder.name,
-				name: prettifyName(folder.name),
-				type: 'general' as const,
-				book_id: null,
+				playlist_id: row.playlist_id,
+				name: row.name,
+				type: row.type,
+				book_id: row.book_id,
 				songs
 			});
 		}

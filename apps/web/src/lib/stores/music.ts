@@ -4,10 +4,9 @@ import { browser } from '$app/environment';
 const STORAGE_KEY = 'lectorius_music';
 
 export interface Song {
-	song_id: string;
 	title: string;
-	duration_ms: number;
-	file_path: string;
+	file_url: string;
+	duration_ms: number; // set at runtime from audio metadata
 }
 
 export interface Playlist {
@@ -18,22 +17,8 @@ export interface Playlist {
 	songs: Song[];
 }
 
-const FALLBACK_PLAYLISTS: Playlist[] = [
-	{
-		playlist_id: 'paris-jazz-cafe',
-		name: 'Paris Jazz Cafe',
-		type: 'general',
-		book_id: null,
-		songs: [
-			{ song_id: '01', title: 'Café Morning', duration_ms: 240000, file_path: '' },
-			{ song_id: '02', title: 'Midnight Stroll', duration_ms: 195000, file_path: '' },
-			{ song_id: '03', title: 'Rainy Window', duration_ms: 210000, file_path: '' }
-		]
-	}
-];
-
-/** Reactive playlists store — populated from Supabase, falls back to hardcoded data */
-export const playlists = writable<Playlist[]>(FALLBACK_PLAYLISTS);
+/** Reactive playlists store — populated from Supabase on app load */
+export const playlists = writable<Playlist[]>([]);
 
 /** Update a song's duration once audio metadata is known */
 export function setSongDuration(playlistId: string, songIndex: number, durationMs: number): void {
@@ -48,17 +33,35 @@ export function setSongDuration(playlistId: string, songIndex: number, durationM
 	);
 }
 
-/** Fetch playlists from the server and update the store */
+/** Fetch playlists from the server and update the store.
+ *  Auto-selects the first playlist if none is currently selected. */
 export async function fetchPlaylists(): Promise<void> {
 	try {
 		const res = await fetch('/api/music/playlists');
 		if (!res.ok) return;
 		const data = await res.json();
 		if (data.playlists?.length > 0) {
-			playlists.set(data.playlists);
+			const mapped: Playlist[] = data.playlists.map((pl: Record<string, unknown>) => ({
+				playlist_id: pl.playlist_id,
+				name: pl.name,
+				type: pl.type,
+				book_id: pl.book_id ?? null,
+				songs: (pl.songs as Record<string, unknown>[]).map((s) => ({
+					title: s.title,
+					file_url: s.file_url,
+					duration_ms: 0
+				}))
+			}));
+			playlists.set(mapped);
+
+			// Auto-select first playlist if none is selected
+			const state = get(music);
+			if (state.current_playlist_id === null) {
+				music.setPlaylistQuiet(mapped[0].playlist_id);
+			}
 		}
 	} catch {
-		// Keep fallback playlists
+		// Network error — playlists stay empty
 	}
 }
 
@@ -69,15 +72,17 @@ export interface MusicState {
 	volume: number; // 0-100 display value
 	loop: boolean;
 	is_playing: boolean;
+	ducked: boolean;
 }
 
 const DEFAULT_STATE: MusicState = {
-	current_playlist_id: FALLBACK_PLAYLISTS[0].playlist_id,
+	current_playlist_id: null,
 	current_song_index: 0,
 	current_time: 0,
 	volume: 70,
 	loop: false,
-	is_playing: false
+	is_playing: false,
+	ducked: false
 };
 
 function hydrate(): MusicState {
@@ -92,7 +97,8 @@ function hydrate(): MusicState {
 			current_time: saved.current_time ?? 0,
 			volume: saved.volume ?? 70,
 			loop: saved.loop ?? false,
-			is_playing: false // never restore playing state
+			is_playing: false, // never restore playing state
+			ducked: false
 		};
 	} catch {
 		return DEFAULT_STATE;
@@ -165,6 +171,14 @@ function createMusicStore() {
 				current_time: 0,
 				is_playing: true
 			})),
+		/** Select a playlist without auto-playing (used for initial load) */
+		setPlaylistQuiet: (playlistId: string) =>
+			updateAndPersist((s) => ({
+				...s,
+				current_playlist_id: playlistId,
+				current_song_index: 0,
+				current_time: 0
+			})),
 		setSong: (index: number) =>
 			updateAndPersist((s) => ({
 				...s,
@@ -172,6 +186,8 @@ function createMusicStore() {
 				current_time: 0,
 				is_playing: true
 			})),
+		duck: () => update((s) => ({ ...s, ducked: true })),
+		unduck: () => update((s) => ({ ...s, ducked: false })),
 		/** Update current_time for display (no localStorage write — used by audio timeupdate) */
 		updateTime: (time: number) => update((s) => ({ ...s, current_time: time })),
 		/** Seek to a specific time and persist (used by user-initiated seeks) */
@@ -185,8 +201,3 @@ function createMusicStore() {
 }
 
 export const music = createMusicStore();
-
-/** Convert display volume (0-100) to actual audio volume (0-0.6) */
-export function displayToActualVolume(displayVolume: number): number {
-	return (displayVolume / 100) * 0.6;
-}
