@@ -52,6 +52,7 @@
 		let prevIsPlaying = false;
 		let prevVolume = -1;
 		let prevDucked = false;
+		let songLoaded = false;
 
 		unsubscribeMusic = music.subscribe((state) => {
 			if (!engine) return;
@@ -74,6 +75,7 @@
 			if (songKey !== prevSongKey) {
 				prevSongKey = songKey;
 				audioDurationMs = 0;
+				songLoaded = false;
 
 				const pl = get(playlists).find(
 					(p) => p.playlist_id === state.current_playlist_id
@@ -82,6 +84,7 @@
 
 				if (song?.file_url) {
 					engine.load(song.file_url, state.current_time);
+					songLoaded = true;
 					if (state.is_playing) engine.play();
 
 					const nextSong = pl?.songs[state.current_song_index + 1];
@@ -135,6 +138,22 @@
 							probe.src = '';
 						}, { once: true });
 						probe.src = s.file_url;
+					}
+				}
+			}
+
+			// Load current song if not yet loaded (playlists arrived after hydrated music state)
+			if (!songLoaded && engine) {
+				const musicState = get(music);
+				if (musicState.current_playlist_id) {
+					const currentPl = allPlaylists.find(p => p.playlist_id === musicState.current_playlist_id);
+					const currentSong = currentPl?.songs[musicState.current_song_index];
+					if (currentSong?.file_url) {
+						engine.load(currentSong.file_url, musicState.current_time);
+						songLoaded = true;
+
+						const nextSong = currentPl?.songs[musicState.current_song_index + 1];
+						if (nextSong?.file_url) engine.preload(nextSong.file_url);
 					}
 				}
 			}
