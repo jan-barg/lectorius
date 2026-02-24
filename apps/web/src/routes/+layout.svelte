@@ -1,13 +1,16 @@
 <script lang="ts">
 	import "../app.css";
 	import SettingsPanel from "$lib/components/settings/SettingsPanel.svelte";
+	import MusicPlayer from "$lib/components/music/MusicPlayer.svelte";
 	import { settings } from "$lib/stores/settings";
+	import { fetchPlaylists } from "$lib/stores/music";
 	import { onMount } from "svelte";
 
 	let settingsOpen = false;
 
 	onMount(() => {
 		settings.init();
+		fetchPlaylists();
 	});
 </script>
 
@@ -55,5 +58,6 @@
 		<slot />
 	</main>
 
+	<MusicPlayer />
 	<SettingsPanel open={settingsOpen} onClose={() => (settingsOpen = false)} />
 </div>

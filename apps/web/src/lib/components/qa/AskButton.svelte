@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { qa } from "$lib/stores/qa";
 	import { playback } from "$lib/stores/playback";
+	import { music } from "$lib/stores/music";
 	import { type Recorder, blobToBase64 } from "$lib/services/recorder";
 	import { get } from "svelte/store";
 	import { onDestroy } from "svelte";
@@ -60,6 +61,7 @@
 		if (isRecording || isProcessing || isPlayingAnswer) return;
 
 		try {
+			music.duck();
 			playback.pause();
 			await recorder.startRecording();
 			qa.startRecording();
@@ -71,6 +73,7 @@
 
 	async function handlePointerUp() {
 		if (!isRecording) return;
+		music.unduck();
 
 		try {
 			const blob = await recorder.stopRecording();
@@ -222,6 +225,7 @@
 	function handlePointerLeave() {
 		if (isRecording) {
 			recorder.cancelRecording();
+			music.unduck();
 			qa.reset();
 			onAnswerComplete();
 		} else {
@@ -233,6 +237,7 @@
 		unsub();
 		abortController?.abort();
 		recorder.cancelRecording();
+		music.unduck();
 		answerAudio?.pause();
 		answerAudio = null;
 	});
