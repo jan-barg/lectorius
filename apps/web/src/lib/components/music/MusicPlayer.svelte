@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { music, playlists, setSongDuration } from '$lib/stores/music';
+	import { playback } from '$lib/stores/playback';
 	import { MusicAudioEngine } from '$lib/services/music-audio';
 	import { toPerceptualVolume } from '$lib/utils/audio';
 	import { fly } from 'svelte/transition';
@@ -17,6 +18,7 @@
 	let audioDurationMs = 0;
 	let unsubscribeMusic: (() => void) | null = null;
 	let unsubscribePlaylists: (() => void) | null = null;
+	let unsubscribePlayback: (() => void) | null = null;
 
 	$: playlist = $playlists.find((p) => p.playlist_id === $music.current_playlist_id) ?? null;
 	$: songs = playlist?.songs ?? [];
@@ -97,6 +99,25 @@
 			}
 		});
 
+		// Sync music play/pause with audiobook when enabled
+		let prevBookPlaying: boolean | null = null;
+		unsubscribePlayback = playback.subscribe((pbState) => {
+			const musicState = get(music);
+			if (!musicState.sync_with_book || musicState.ducked || !pbState.book_id) {
+				prevBookPlaying = null;
+				return;
+			}
+			if (prevBookPlaying === null) {
+				prevBookPlaying = pbState.is_playing;
+				return;
+			}
+			if (pbState.is_playing !== prevBookPlaying) {
+				prevBookPlaying = pbState.is_playing;
+				if (pbState.is_playing) music.play();
+				else music.pause();
+			}
+		});
+
 		// Probe song durations when playlists arrive
 		unsubscribePlaylists = playlists.subscribe((allPlaylists) => {
 			for (const pl of allPlaylists) {
@@ -123,6 +144,7 @@
 	onDestroy(() => {
 		unsubscribeMusic?.();
 		unsubscribePlaylists?.();
+		unsubscribePlayback?.();
 		engine?.destroy();
 		engine = null;
 	});
@@ -215,6 +237,17 @@
 
 					<MusicVolumeSlider volume={$music.volume} onVolumeInput={handleVolumeInput} />
 
+					<button
+						class="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors {$music.sync_with_book ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-white/5 hover:text-text'}"
+						onclick={() => music.toggleSync()}
+					>
+						<svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+							<path stroke-linecap="round" stroke-linejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+						</svg>
+						<span class="font-medium">Sync with audiobook</span>
+					</button>
+
 					<p class="text-center text-[10px] text-muted/50">Generated with Eleven Music</p>
 				</div>
 			</div>
@@ -254,6 +287,18 @@
 			<div class="hidden sm:flex">
 				<MusicVolumeSlider volume={$music.volume} onVolumeInput={handleVolumeInput} compact />
 			</div>
+
+			<button
+				class="rounded-full p-1.5 transition-colors {$music.sync_with_book ? 'text-accent' : 'text-muted hover:text-text'}"
+				onclick={() => music.toggleSync()}
+				aria-label={$music.sync_with_book ? 'Unsync from audiobook' : 'Sync with audiobook'}
+				title={$music.sync_with_book ? 'Synced with audiobook' : 'Sync with audiobook'}
+			>
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
+					<path stroke-linecap="round" stroke-linejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
+				</svg>
+			</button>
 
 			<button
 				class="rounded-full p-1 text-muted transition-colors hover:text-text"

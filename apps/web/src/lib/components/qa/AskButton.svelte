@@ -61,8 +61,8 @@
 		if (isRecording || isProcessing || isPlayingAnswer) return;
 
 		try {
-			playback.pause();
 			music.duck();
+			playback.pause();
 			await recorder.startRecording();
 			qa.startRecording();
 		} catch (e) {

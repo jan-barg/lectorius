@@ -1,11 +1,17 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { browser } from '$app/environment';
 	import Player from '$lib/components/player/Player.svelte';
+	import BookMusicPrompt from '$lib/components/music/BookMusicPrompt.svelte';
 	import { book } from '$lib/stores/book';
 	import { playback } from '$lib/stores/playback';
+	import { playlists, currentBookId, music } from '$lib/stores/music';
+	import { get } from 'svelte/store';
 	import type { BookStoreState } from '$lib/stores/types';
 	import type { GetBookResponse } from '$lib/types';
+
+	const SESSION_KEY = 'lectorius_music_prompts_shown';
 
 	let bookId = '';
 
@@ -13,7 +19,12 @@
 		bookId = p.params.id ?? '';
 	});
 
+	let showMusicPrompt = false;
+	let bookPlaylistId = '';
+	let promptTimer: ReturnType<typeof setTimeout> | null = null;
+
 	onMount(async () => {
+		currentBookId.set(bookId);
 		book.startLoading();
 
 		try {
@@ -35,12 +46,38 @@
 		} catch (e) {
 			book.setError(e instanceof Error ? e.message : 'Failed to load book');
 		}
+
+		// Deferred music prompt check — runs after page has fully rendered
+		await tick();
+		promptTimer = setTimeout(() => {
+			if (!browser) return;
+			const cached = get(playlists);
+			if (cached.length === 0) return;
+
+			const match = cached.find((p) => p.type === 'book' && p.book_id === bookId);
+			if (!match) return;
+
+			// Already playing this book's playlist
+			if (get(music).current_playlist_id === match.playlist_id) return;
+
+			try {
+				const shown: string[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) || '[]');
+				if (shown.includes(bookId)) return;
+			} catch {
+				return;
+			}
+
+			bookPlaylistId = match.playlist_id;
+			showMusicPrompt = true;
+		}, 500);
 	});
 
 	onDestroy(() => {
 		unsubPage();
 		book.clear();
 		playback.reset();
+		currentBookId.set(null);
+		if (promptTimer) clearTimeout(promptTimer);
 	});
 
 	let bookState: BookStoreState;
@@ -70,3 +107,11 @@
 		<Player loadedBook={bookState.loaded_book} />
 	{/if}
 </div>
+
+{#if showMusicPrompt && bookState?.loaded_book}
+	<BookMusicPrompt
+		bookTitle={bookState.loaded_book.book.title}
+		{bookPlaylistId}
+		onDismiss={() => (showMusicPrompt = false)}
+	/>
+{/if}

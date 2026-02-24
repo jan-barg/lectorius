@@ -3,6 +3,9 @@ import { browser } from '$app/environment';
 
 const STORAGE_KEY = 'lectorius_music';
 
+/** Tracks which book page the user is currently viewing (null on library page) */
+export const currentBookId = writable<string | null>(null);
+
 export interface Song {
 	title: string;
 	file_url: string;
@@ -73,6 +76,7 @@ export interface MusicState {
 	loop: boolean;
 	is_playing: boolean;
 	ducked: boolean;
+	sync_with_book: boolean;
 }
 
 const DEFAULT_STATE: MusicState = {
@@ -82,7 +86,8 @@ const DEFAULT_STATE: MusicState = {
 	volume: 70,
 	loop: false,
 	is_playing: false,
-	ducked: false
+	ducked: false,
+	sync_with_book: false
 };
 
 function hydrate(): MusicState {
@@ -98,7 +103,8 @@ function hydrate(): MusicState {
 			volume: saved.volume ?? 70,
 			loop: saved.loop ?? false,
 			is_playing: false, // never restore playing state
-			ducked: false
+			ducked: false,
+			sync_with_book: saved.sync_with_book ?? false
 		};
 	} catch {
 		return DEFAULT_STATE;
@@ -115,7 +121,8 @@ function persist(state: MusicState): void {
 				current_song_index: state.current_song_index,
 				current_time: state.current_time,
 				volume: state.volume,
-				loop: state.loop
+				loop: state.loop,
+				sync_with_book: state.sync_with_book
 			})
 		);
 	} catch {
@@ -163,6 +170,7 @@ function createMusicStore() {
 		setVolume: (volume: number) =>
 			updateAndPersist((s) => ({ ...s, volume: Math.max(0, Math.min(100, volume)) })),
 		toggleLoop: () => updateAndPersist((s) => ({ ...s, loop: !s.loop })),
+		toggleSync: () => updateAndPersist((s) => ({ ...s, sync_with_book: !s.sync_with_book })),
 		setPlaylist: (playlistId: string) =>
 			updateAndPersist((s) => ({
 				...s,
