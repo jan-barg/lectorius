@@ -21,6 +21,12 @@
 	let isProcessing = false;
 	let isPlayingAnswer = false;
 
+	let showAccessPrompt = false;
+	let accessCodeInput = '';
+	let accessCodeError = '';
+	let accessCodeLoading = false;
+	let isUnlocked = browser ? localStorage.getItem('lectorius_unlocked') === 'true' : false;
+
 	const unsub = qa.subscribe((s) => {
 		isRecording = s.is_recording;
 		isProcessing = s.is_processing;
@@ -82,11 +88,15 @@
 			const audio_base64 = await blobToBase64(blob);
 
 			const state = get(playback);
+			const currentUserName = browser ? localStorage.getItem('lectorius_user') || '' : '';
 
 			abortController = new AbortController();
 			const response = await fetch("/api/ask", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: {
+					"Content-Type": "application/json",
+					...(currentUserName ? { "X-User-Name": currentUserName } : {})
+				},
 				body: JSON.stringify({
 					book_id: bookId,
 					chunk_index: state.chunk_index,
@@ -102,6 +112,20 @@
 				try {
 					errorData = await response.json();
 				} catch {}
+
+				if (response.status === 403 && errorData?.error === 'Free limit reached') {
+					showAccessPrompt = true;
+					qa.reset();
+					onAnswerComplete();
+					return;
+				}
+
+				if (response.status === 429) {
+					qa.setError('Too many questions — slow down a bit');
+					resumeAfterDelay();
+					return;
+				}
+
 				if (errorData?.fallback_audio_url) {
 					playFallbackAudio(errorData.fallback_audio_url);
 				} else {
@@ -233,6 +257,31 @@
 		}
 	}
 
+	async function handleAccessCode() {
+		if (!accessCodeInput.trim()) return;
+		accessCodeLoading = true;
+		accessCodeError = '';
+		try {
+			const res = await fetch('/api/verify-code', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: accessCodeInput.trim() })
+			});
+			if (res.ok) {
+				if (browser) localStorage.setItem('lectorius_unlocked', 'true');
+				isUnlocked = true;
+				showAccessPrompt = false;
+				accessCodeInput = '';
+			} else {
+				accessCodeError = 'Invalid code, try again';
+			}
+		} catch {
+			accessCodeError = 'Something went wrong';
+		} finally {
+			accessCodeLoading = false;
+		}
+	}
+
 	onDestroy(() => {
 		unsub();
 		abortController?.abort();
@@ -243,6 +292,39 @@
 	});
 </script>
 
+{#if showAccessPrompt}
+<div class="flex flex-col items-center gap-4 text-center">
+	<div class="rounded-2xl border border-white/10 bg-surface/95 p-6 shadow-xl backdrop-blur-md space-y-4 max-w-xs">
+		<p class="text-sm text-text font-medium">You've used your 3 free questions</p>
+		<p class="text-xs text-muted">Enter an access code for unlimited access.</p>
+		<div class="flex gap-2">
+			<input
+				type="text"
+				bind:value={accessCodeInput}
+				onkeydown={(e) => e.key === 'Enter' && handleAccessCode()}
+				placeholder="Access code"
+				class="flex-1 min-w-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text placeholder:text-muted/50 outline-none focus:border-accent/50 transition-colors"
+			/>
+			<button
+				onclick={handleAccessCode}
+				disabled={!accessCodeInput.trim() || accessCodeLoading}
+				class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/80 disabled:opacity-40"
+			>
+				{accessCodeLoading ? '...' : 'Unlock'}
+			</button>
+		</div>
+		{#if accessCodeError}
+			<p class="text-xs text-red-400">{accessCodeError}</p>
+		{/if}
+		<button
+			onclick={() => (showAccessPrompt = false)}
+			class="text-xs text-muted hover:text-text transition-colors"
+		>
+			Dismiss
+		</button>
+	</div>
+</div>
+{:else}
 <div
 	class="relative inline-flex items-center justify-center group touch-none select-none isolate"
 >
@@ -350,6 +432,7 @@
 		</div>
 	</button>
 </div>
+{/if}
 
 <style>
 	/* Bulletproof CSS Wave Animation */

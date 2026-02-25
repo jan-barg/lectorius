@@ -1,16 +1,19 @@
 <script lang="ts">
 	import Greeting from '$lib/components/library/Greeting.svelte';
+	import WelcomeCard from '$lib/components/library/WelcomeCard.svelte';
 	import TextureBar from '$lib/components/ui/TextureBar.svelte';
 	import ContinueReading from '$lib/components/library/ContinueReading.svelte';
 	import ReadSomethingNew from '$lib/components/library/ReadSomethingNew.svelte';
 	import type { BookListItem } from '$lib/types';
 	import { getReadingHistory, type ReadingHistoryEntry } from '$lib/stores/reading-history';
 	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 
 	let books: BookListItem[] = [];
 	let history: ReadingHistoryEntry[] = [];
 	let loading = true;
 	let error: string | null = null;
+	let showWelcome = browser ? !localStorage.getItem('lectorius_user') : false;
 
 	function refreshHistory() {
 		history = getReadingHistory();
@@ -60,3 +63,7 @@
 		</div>
 	{/if}
 </div>
+
+{#if showWelcome}
+	<WelcomeCard onComplete={() => (showWelcome = false)} />
+{/if}

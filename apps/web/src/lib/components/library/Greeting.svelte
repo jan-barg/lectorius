@@ -1,38 +1,39 @@
 <script lang="ts">
-	const name = "Jan";
+	import { userName } from '$lib/stores/user';
+
 	const hour = new Date().getHours();
+	const SLOT = '%%NAME%%';
 
 	const pools = {
-		late: [`Fancy a lullaby, ${name}?`, `Trouble sleeping, ${name}?`],
-		morning: ["Morning, pal.", `How's your coffee, ${name}?`],
-		default: [
-			`Hello there, ${name}`,
-			`What are we reading, ${name}?`,
-			"The book worm is back!",
-		],
+		late: [`Fancy a lullaby, ${SLOT}?`, `Trouble sleeping, ${SLOT}?`],
+		morning: ['Morning, pal.', `How's your coffee, ${SLOT}?`],
+		default: [`Hello there, ${SLOT}`, `What are we reading, ${SLOT}?`, 'The book worm is back!']
 	};
 
-	function pick(): string {
-		let pool: string[];
-		if (hour >= 22 || hour < 4) pool = pools.late;
-		else if (hour < 12) pool = pools.morning;
-		else pool = pools.default;
-		return pool[Math.floor(Math.random() * pool.length)];
-	}
+	const noNamePools = {
+		late: ['Fancy a lullaby?', 'Up late reading?'],
+		morning: ['Morning, pal.', 'Good morning!'],
+		default: ['Hello there!', 'What are we reading today?', 'The book worm is back!']
+	};
 
-	const greeting = pick();
+	const key: 'late' | 'morning' | 'default' =
+		hour >= 22 || hour < 4 ? 'late' : hour < 12 ? 'morning' : 'default';
+	const idx = Math.floor(Math.random() * pools[key].length);
+
+	let name = $derived($userName);
+	let greeting = $derived(
+		name
+			? pools[key][idx]
+			: noNamePools[key][Math.min(idx, noNamePools[key].length - 1)]
+	);
+	let hasName = $derived(name !== '' && greeting.includes(SLOT));
+	let parts = $derived(hasName ? greeting.split(SLOT) : [greeting]);
 </script>
 
-<h1
-	class="font-outfit text-3xl md:text-5xl font-light text-text drop-shadow-sm"
->
-	{#if typeof greeting === "string"}
-		{#if greeting.includes(name)}
-			{greeting.split(name)[0]}<span
-				class="font-serif italic text-accent font-bold">{name}</span
-			>{greeting.split(name)[1]}
-		{:else}
-			{greeting}
-		{/if}
+<h1 class="font-outfit text-3xl md:text-5xl font-light text-text drop-shadow-sm">
+	{#if hasName}
+		{parts[0]}<span class="font-serif italic text-accent font-bold">{name}</span>{parts[1]}
+	{:else}
+		{greeting}
 	{/if}
 </h1>

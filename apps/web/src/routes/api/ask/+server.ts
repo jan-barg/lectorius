@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import { toFile } from 'openai';
 import { env } from '$env/dynamic/private';
-import { getOpenAI, getAnthropic } from '$lib/server/clients';
+import { getOpenAI, getAnthropic, getSupabase } from '$lib/server/clients';
 import type { Chapter, Chunk } from '$lib/types';
 import { getCachedBook } from '$lib/server/book-cache';
 import { getRecentChunks, getCurrentCheckpoint } from '$lib/server/context';
@@ -30,6 +30,10 @@ function sseError(error: string, fallbackId: string): Response {
 export const POST: RequestHandler = async ({ request }) => {
 	const t0 = Date.now();
 	debugLog(`[stream] === Starting streaming Q&A ===`);
+
+	const forwarded = request.headers.get('x-forwarded-for');
+	const clientIP = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
+	const userName = request.headers.get('x-user-name') || '';
 
 	const { book_id, chunk_index, audio_base64 } = await request.json();
 
@@ -148,6 +152,19 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 
 				debugLog(`[stream] Complete (${Date.now() - t0}ms)`);
+
+				// Log question to database
+				try {
+					await getSupabase().from('question_log').insert({
+						ip: clientIP,
+						user_name: userName || null,
+						book_id,
+						question
+					});
+				} catch (e) {
+					console.error('[stream] Failed to log question:', e);
+				}
+
 				send({ type: 'done', full_answer: fullAnswer });
 				controller.close();
 			} catch (error: unknown) {

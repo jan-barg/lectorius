@@ -2,12 +2,49 @@
 	import { fly, fade } from 'svelte/transition';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 	import { clearAllReadingHistory } from '$lib/stores/reading-history';
+	import { userName, unlocked } from '$lib/stores/user';
 
 	export let open = false;
 	export let onClose: () => void;
 
 	/** 'idle' | 'confirm' | 'feedback' */
 	let state = 'idle';
+
+	let nameInput = '';
+	let codeInput = '';
+	let codeError = '';
+	let codeLoading = false;
+
+	$: if (open) nameInput = $userName;
+
+	function handleNameBlur() {
+		const trimmed = nameInput.trim();
+		userName.setName(trimmed);
+		nameInput = trimmed;
+	}
+
+	async function handleVerifyCode() {
+		if (!codeInput.trim()) return;
+		codeLoading = true;
+		codeError = '';
+		try {
+			const res = await fetch('/api/verify-code', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ code: codeInput.trim() })
+			});
+			if (res.ok) {
+				unlocked.unlock();
+				codeInput = '';
+			} else {
+				codeError = 'Invalid code, try again';
+			}
+		} catch {
+			codeError = 'Something went wrong';
+		} finally {
+			codeLoading = false;
+		}
+	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
@@ -55,8 +92,47 @@
 
 		<div class="space-y-6">
 			<div>
+				<span class="mb-2 block text-sm font-medium text-muted">Your name</span>
+				<input
+					type="text"
+					bind:value={nameInput}
+					onblur={handleNameBlur}
+					onkeydown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+					class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text placeholder:text-muted/50 outline-none focus:border-accent/50 transition-colors"
+					placeholder="Enter your name"
+				/>
+			</div>
+
+			<div>
 				<span class="mb-2 block text-sm font-medium text-muted">Theme</span>
 				<ThemeSwitcher />
+			</div>
+
+			<div>
+				<span class="mb-2 block text-sm font-medium text-muted">Access</span>
+				{#if $unlocked}
+					<p class="text-sm text-green-500 font-medium">Unlimited access &#10003;</p>
+				{:else}
+					<div class="space-y-2">
+						<input
+							type="text"
+							bind:value={codeInput}
+							onkeydown={(e) => e.key === 'Enter' && handleVerifyCode()}
+							placeholder="Enter access code"
+							class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text placeholder:text-muted/50 outline-none focus:border-accent/50 transition-colors"
+						/>
+						<button
+							onclick={handleVerifyCode}
+							disabled={!codeInput.trim() || codeLoading}
+							class="w-full rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/80 disabled:opacity-40"
+						>
+							{codeLoading ? 'Verifying...' : 'Unlock'}
+						</button>
+						{#if codeError}
+							<p class="text-xs text-red-400">{codeError}</p>
+						{/if}
+					</div>
+				{/if}
 			</div>
 		</div>
 
