@@ -55,7 +55,9 @@ export const GET: RequestHandler = async () => {
 			});
 		}
 
-		return json({ playlists });
+		return json({ playlists }, {
+			headers: { 'Cache-Control': 'public, max-age=300' }
+		});
 	} catch (e) {
 		const message = e instanceof Error ? e.message : 'Failed to fetch playlists';
 		return error(500, message);

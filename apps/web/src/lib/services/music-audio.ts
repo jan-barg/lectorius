@@ -14,7 +14,7 @@ export class MusicAudioEngine {
 
 	constructor(callbacks: MusicAudioCallbacks) {
 		this.audio = new Audio();
-		this.audio.preload = 'auto';
+		this.audio.preload = 'none';
 		this.callbacks = callbacks;
 
 		this.audio.addEventListener('ended', this.handleEnded);
@@ -78,7 +78,7 @@ export class MusicAudioEngine {
 			this.preloadAudio.src = '';
 		}
 		this.preloadAudio = new Audio();
-		this.preloadAudio.preload = 'auto';
+		this.preloadAudio.preload = 'metadata';
 		this.preloadAudio.src = src;
 	}
 

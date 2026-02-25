@@ -54,6 +54,32 @@
 		let prevDucked = false;
 		let songLoaded = false;
 
+		// Probe song durations only for the current playlist (not all playlists)
+		const probedPlaylistIds = new Set<string>();
+
+		function probePlaylistDurations(allPlaylists: typeof $playlists, playlistId: string | null) {
+			if (!playlistId || probedPlaylistIds.has(playlistId)) return;
+			probedPlaylistIds.add(playlistId);
+			const pl = allPlaylists.find(p => p.playlist_id === playlistId);
+			if (!pl) return;
+			for (let i = 0; i < pl.songs.length; i++) {
+				const s = pl.songs[i];
+				if (s.file_url && s.duration_ms === 0) {
+					const probe = new Audio();
+					const idx = i;
+					const plId = pl.playlist_id;
+					probe.preload = 'metadata';
+					probe.addEventListener('loadedmetadata', () => {
+						if (probe.duration && isFinite(probe.duration)) {
+							setSongDuration(plId, idx, Math.round(probe.duration * 1000));
+						}
+						probe.src = '';
+					}, { once: true });
+					probe.src = s.file_url;
+				}
+			}
+		}
+
 		unsubscribeMusic = music.subscribe((state) => {
 			if (!engine) return;
 
@@ -76,6 +102,9 @@
 				prevSongKey = songKey;
 				audioDurationMs = 0;
 				songLoaded = false;
+
+				// Probe durations when user switches to a new playlist
+				probePlaylistDurations(get(playlists), state.current_playlist_id);
 
 				const pl = get(playlists).find(
 					(p) => p.playlist_id === state.current_playlist_id
@@ -121,30 +150,12 @@
 			}
 		});
 
-		// Probe song durations when playlists arrive
 		unsubscribePlaylists = playlists.subscribe((allPlaylists) => {
-			for (const pl of allPlaylists) {
-				for (let i = 0; i < pl.songs.length; i++) {
-					const s = pl.songs[i];
-					if (s.file_url && s.duration_ms === 0) {
-						const probe = new Audio();
-						const idx = i;
-						const plId = pl.playlist_id;
-						probe.preload = 'metadata';
-						probe.addEventListener('loadedmetadata', () => {
-							if (probe.duration && isFinite(probe.duration)) {
-								setSongDuration(plId, idx, Math.round(probe.duration * 1000));
-							}
-							probe.src = '';
-						}, { once: true });
-						probe.src = s.file_url;
-					}
-				}
-			}
+			const musicState = get(music);
+			probePlaylistDurations(allPlaylists, musicState.current_playlist_id);
 
 			// Load current song if not yet loaded (playlists arrived after hydrated music state)
 			if (!songLoaded && engine) {
-				const musicState = get(music);
 				if (musicState.current_playlist_id) {
 					const currentPl = allPlaylists.find(p => p.playlist_id === musicState.current_playlist_id);
 					const currentSong = currentPl?.songs[musicState.current_song_index];
