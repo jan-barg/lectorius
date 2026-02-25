@@ -1,9 +1,12 @@
 """Shared I/O utilities for pipeline stages."""
 
+import logging
 from pathlib import Path
 
 from lectorius_pipeline.errors import PipelineError
-from lectorius_pipeline.schemas import Chunk, Manifest
+from lectorius_pipeline.schemas import BookMeta, Chunk, Manifest
+
+logger = logging.getLogger(__name__)
 
 
 def load_chunks(book_dir: Path, error_class: type[PipelineError] = PipelineError) -> list[Chunk]:
@@ -50,3 +53,22 @@ def update_manifest(output_dir: Path, stage_name: str) -> None:
         manifest.stages_completed.append(stage_name)
 
     path.write_text(manifest.model_dump_json(indent=2), encoding="utf-8")
+
+
+def load_book_meta(book_dir: Path) -> BookMeta | None:
+    """Load book metadata from book.json if available.
+
+    Args:
+        book_dir: Path to book output directory.
+
+    Returns:
+        BookMeta if book.json exists and is valid, None otherwise.
+    """
+    meta_path = book_dir / "book.json"
+    if not meta_path.exists():
+        return None
+    try:
+        return BookMeta.model_validate_json(meta_path.read_text())
+    except Exception as e:
+        logger.warning("Could not load book.json: %s", e)
+        return None

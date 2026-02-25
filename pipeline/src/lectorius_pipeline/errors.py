@@ -130,3 +130,10 @@ class CheckpointGenerationError(MemoryStageError):
     """Failed to generate a memory checkpoint."""
 
     pass
+
+
+class FallbacksError(PipelineError):
+    """Error during fallback audio generation."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, stage="fallbacks")

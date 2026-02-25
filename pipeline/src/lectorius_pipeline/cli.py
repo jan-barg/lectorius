@@ -14,6 +14,7 @@ from lectorius_pipeline.stages.chunkify import run_chunkify
 from lectorius_pipeline.stages.ingest import run_ingest
 from lectorius_pipeline.stages.memory import run_memory
 from lectorius_pipeline.stages.rag import run_rag
+from lectorius_pipeline.stages.fallbacks import run_fallbacks
 from lectorius_pipeline.stages.tts import run_tts
 from lectorius_pipeline.stages.validate import run_validate
 
@@ -79,6 +80,17 @@ def main() -> None:
     default=False,
     help="Use Claude to analyze text structure at ingest",
 )
+@click.option(
+    "--tts-provider",
+    type=click.Choice(["openai", "elevenlabs"]),
+    default=None,
+    help="TTS provider to write into book.json",
+)
+@click.option(
+    "--voice-id",
+    default=None,
+    help="Voice ID to write into book.json (e.g. ElevenLabs voice_id)",
+)
 def process(
     input_path: Path,
     book_id: str,
@@ -87,6 +99,8 @@ def process(
     from_stage: str | None,
     verbose: bool,
     llm_assist: bool,
+    tts_provider: str | None,
+    voice_id: str | None,
 ) -> None:
     """
     Process an epub through the pipeline.
@@ -108,7 +122,8 @@ def process(
     try:
         for stage in stages_to_run:
             if stage == "ingest":
-                run_ingest(input_path, output_dir, book_id, config)
+                run_ingest(input_path, output_dir, book_id, config,
+                           tts_provider=tts_provider, voice_id=voice_id)
             elif stage == "chapterize":
                 run_chapterize(output_dir, book_id)
             elif stage == "chunkify":
@@ -153,19 +168,33 @@ def process(
     default=False,
     help="Use Claude to analyze text structure",
 )
+@click.option(
+    "--tts-provider",
+    type=click.Choice(["openai", "elevenlabs"]),
+    default=None,
+    help="TTS provider to write into book.json",
+)
+@click.option(
+    "--voice-id",
+    default=None,
+    help="Voice ID to write into book.json (e.g. ElevenLabs voice_id)",
+)
 def ingest(
     input_path: Path,
     book_id: str,
     output_dir: Path,
     verbose: bool,
     llm_assist: bool,
+    tts_provider: str | None,
+    voice_id: str | None,
 ) -> None:
     """Run the ingest stage only."""
     setup_logging(verbose)
     config = PipelineConfig(llm_assist=llm_assist) if llm_assist else DEFAULT_CONFIG
 
     try:
-        report = run_ingest(input_path, output_dir, book_id, config)
+        report = run_ingest(input_path, output_dir, book_id, config,
+                            tts_provider=tts_provider, voice_id=voice_id)
         click.echo(f"Ingest completed: {report.chars_after_cleanup} chars extracted")
     except PipelineError as e:
         click.echo(f"Error: {e}", err=True)
@@ -262,8 +291,8 @@ def validate(book_dir: Path, book_id: str, verbose: bool) -> None:
 @click.option(
     "--provider",
     type=click.Choice(["openai", "elevenlabs"]),
-    default="openai",
-    help="TTS provider",
+    default=None,
+    help="TTS provider (reads from book.json if not specified)",
 )
 @click.option(
     "--voice",
@@ -281,7 +310,7 @@ def validate(book_dir: Path, book_id: str, verbose: bool) -> None:
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 def tts(
     book_dir: Path,
-    provider: str,
+    provider: str | None,
     voice: str | None,
     tts_model: str | None,
     resume: bool,
@@ -391,6 +420,56 @@ def memory(
             f"Memory completed: {report.checkpoints_generated} checkpoints, "
             f"model={report.llm_model}"
         )
+    except PipelineError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@main.command("generate-fallbacks")
+@click.option(
+    "--book-dir",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Book directory (reads book.json for voice/provider)",
+)
+@click.option(
+    "--provider",
+    type=click.Choice(["openai", "elevenlabs"]),
+    default=None,
+    help="TTS provider (overrides book.json)",
+)
+@click.option(
+    "--voice",
+    default=None,
+    help="Voice ID (overrides book.json)",
+)
+@click.option(
+    "--model",
+    "tts_model",
+    default=None,
+    help="Model name (uses provider default if not specified)",
+)
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
+def generate_fallbacks_cmd(
+    book_dir: Path | None,
+    provider: str | None,
+    voice: str | None,
+    tts_model: str | None,
+    verbose: bool,
+) -> None:
+    """Generate per-voice fallback audio and upload to Supabase Storage."""
+    setup_logging(verbose)
+
+    try:
+        results = run_fallbacks(
+            book_dir=book_dir,
+            provider_name=provider,
+            voice=voice,
+            model=tts_model,
+        )
+        generated = sum(1 for v in results.values() if v)
+        skipped = sum(1 for v in results.values() if not v)
+        click.echo(f"Fallbacks: {generated} generated, {skipped} already existed")
     except PipelineError as e:
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)

@@ -12,6 +12,8 @@ export interface BookMeta {
 	source: string | null;
 	source_id: string | null;
 	status?: 'available' | 'coming_soon';
+	tts_provider?: 'openai' | 'elevenlabs';
+	voice_id?: string;
 }
 
 // =============================================================================

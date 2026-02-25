@@ -7,5 +7,7 @@
   "book_type": "fiction",
   "source": "gutenberg",
   "source_id": "1342",
-  "status": "available"
+  "status": "available",
+  "tts_provider": "elevenlabs",
+  "voice_id": "dAlhI9qAHVIjXuVppzhW"
 }

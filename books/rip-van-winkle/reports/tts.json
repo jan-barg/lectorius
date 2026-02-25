@@ -1,13 +1,13 @@
 {
   "success": true,
   "book_id": "rip-van-winkle",
-  "provider": "openai",
-  "voice": "alloy",
-  "model": "tts-1",
+  "provider": "elevenlabs",
+  "voice": "YXpFCvM1S3JbWEJhoskW",
+  "model": "eleven_multilingual_v2",
   "total_chunks": 83,
   "completed_chunks": 83,
   "failed_chunks": 0,
-  "total_duration_ms": 2627256,
+  "total_duration_ms": 3109029,
   "warnings": [],
   "errors": []
 }

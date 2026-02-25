@@ -18,6 +18,8 @@ class BookMeta(BaseModel):
     source: str | None = None
     source_id: str | None = None
     status: Literal["available", "coming_soon"] = "available"
+    tts_provider: Literal["openai", "elevenlabs"] | None = None
+    voice_id: str | None = None
 
 
 class ManifestConfig(BaseModel):

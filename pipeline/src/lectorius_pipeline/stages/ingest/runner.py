@@ -25,6 +25,8 @@ def run_ingest(
     output_dir: Path,
     book_id: str,
     config: PipelineConfig,
+    tts_provider: str | None = None,
+    voice_id: str | None = None,
 ) -> IngestReport:
     """
     Run the ingest stage.
@@ -36,6 +38,8 @@ def run_ingest(
         output_dir: Directory for output files
         book_id: Identifier for the book
         config: Pipeline configuration
+        tts_provider: TTS provider to write into book.json ('openai' or 'elevenlabs').
+        voice_id: Voice ID to write into book.json.
 
     Returns:
         IngestReport with processing results
@@ -110,6 +114,12 @@ def run_ingest(
         raise SuspiciouslyShortError(
             f"Text is suspiciously short ({chars_after_cleanup} chars < {config.min_text_length})"
         )
+
+    # Set TTS fields if provided
+    if tts_provider:
+        book_meta.tts_provider = tts_provider  # type: ignore[assignment]
+    if voice_id:
+        book_meta.voice_id = voice_id
 
     # Write outputs
     _write_raw_text(output_dir, text)

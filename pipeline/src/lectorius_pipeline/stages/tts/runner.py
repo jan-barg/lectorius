@@ -9,7 +9,7 @@ from mutagen.mp3 import MP3
 
 from lectorius_pipeline.errors import AudioWriteError, TTSError, TTSProviderError
 from lectorius_pipeline.schemas import Chunk, PlaybackMapEntry, TTSReport
-from lectorius_pipeline.utils.io import load_chunks
+from lectorius_pipeline.utils.io import load_book_meta, load_chunks
 
 from .progress import TTSProgress
 from .providers.base import TTSProvider
@@ -25,7 +25,7 @@ RETRY_BACKOFF_BASE = 2.0
 def run_tts(
     book_dir: Path,
     book_id: str,
-    provider_name: str = "openai",
+    provider_name: str | None = None,
     voice: str | None = None,
     model: str | None = None,
     resume: bool = False,
@@ -36,8 +36,8 @@ def run_tts(
     Args:
         book_dir: Path to book output directory.
         book_id: Book identifier.
-        provider_name: TTS provider ('openai' or 'elevenlabs').
-        voice: Voice name/ID (provider-specific). Uses provider default if None.
+        provider_name: TTS provider ('openai' or 'elevenlabs'). Reads from book.json if None.
+        voice: Voice name/ID (provider-specific). Reads from book.json if None.
         model: Model name. Uses provider default if None.
         resume: If True, skip already-completed chunks.
         concurrency: Max parallel API requests.
@@ -48,14 +48,19 @@ def run_tts(
     Raises:
         TTSError: If the stage fails critically.
     """
-    logger.info("Starting TTS stage for %s (provider=%s)", book_id, provider_name)
-
     # Load chunks
     chunks = load_chunks(book_dir, TTSError)
     logger.info("Loaded %d chunks for TTS", len(chunks))
 
+    # Resolve provider/voice: CLI flags > book.json > defaults
+    book_meta = load_book_meta(book_dir)
+    effective_provider = provider_name or (book_meta.tts_provider if book_meta else None) or "openai"
+    effective_voice = voice or (book_meta.voice_id if book_meta else None)
+
+    logger.info("Starting TTS stage for %s (provider=%s)", book_id, effective_provider)
+
     # Create provider
-    provider = _create_provider(provider_name, voice, model)
+    provider = create_provider(effective_provider, effective_voice, model)
     logger.info("Using %s provider (voice=%s, model=%s)", provider.name, provider.voice, provider.model)
 
     # Setup audio output directory
@@ -120,7 +125,7 @@ def run_tts(
 
 
 
-def _create_provider(
+def create_provider(
     provider_name: str,
     voice: str | None,
     model: str | None,

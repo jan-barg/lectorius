@@ -12,15 +12,18 @@ import { generateSpeech } from '$lib/server/tts';
 const debug = env.DEBUG_LOGGING === 'true';
 function debugLog(...args: unknown[]) { if (debug) console.log(...args); }
 
-function fallbackUrl(id: string): string {
+function fallbackUrl(id: string, voiceId?: string): string {
+	if (voiceId) {
+		return `${env.SUPABASE_URL}/storage/v1/object/public/system/fallback-audio/${voiceId}/${id}.mp3`;
+	}
 	return `${env.SUPABASE_URL}/storage/v1/object/public/system/audio/${id}.mp3`;
 }
 
-function sseError(error: string, fallbackId: string): Response {
+function sseError(error: string, fallbackId: string, voiceId?: string): Response {
 	const data = JSON.stringify({
 		type: 'error',
 		error,
-		fallback_audio_url: fallbackUrl(fallbackId)
+		fallback_audio_url: fallbackUrl(fallbackId, voiceId)
 	});
 	return new Response(`data: ${data}\n\n`, {
 		headers: { 'Content-Type': 'text/event-stream' }
@@ -46,6 +49,17 @@ export const POST: RequestHandler = async ({ request }) => {
 		return sseError('Book not found', 'error');
 	}
 	const { book, chapters, chunks, playback_map, checkpoints } = bookData;
+	const ttsProvider = book.tts_provider ?? 'openai';
+	const ttsVoiceId = book.voice_id;
+
+	async function tts(text: string): Promise<string> {
+		try {
+			return await generateSpeech({ text, provider: ttsProvider, voice_id: ttsVoiceId });
+		} catch (e) {
+			console.error(`[stream] ${ttsProvider} TTS failed, falling back to OpenAI:`, e);
+			return await generateSpeech({ text, provider: 'openai' });
+		}
+	}
 
 	// 1. Transcribe
 	let question: string;
@@ -59,15 +73,15 @@ export const POST: RequestHandler = async ({ request }) => {
 		question = transcription.text.trim();
 	} catch (e) {
 		console.error('[stream] Whisper failed:', e);
-		return sseError('Transcription failed', 'error');
+		return sseError('Transcription failed', 'error', ttsVoiceId);
 	}
 
 	if (!question || question.length < 2) {
-		return sseError('Could not understand audio', 'error');
+		return sseError('Could not understand audio', 'error', ttsVoiceId);
 	}
 
 	if (chunk_index < 5) {
-		return sseError('Not enough context', 'no_context_yet');
+		return sseError('Not enough context', 'no_context_yet', ttsVoiceId);
 	}
 
 	debugLog(`[stream] Question: "${question}" (${Date.now() - t0}ms)`);
@@ -136,7 +150,7 @@ export const POST: RequestHandler = async ({ request }) => {
 							debugLog(
 								`[stream] TTS: "${sentence.substring(0, 50)}" (${Date.now() - t0}ms)`
 							);
-							const audio = await generateSpeech(sentence);
+							const audio = await tts(sentence);
 							send({ type: 'audio', text: sentence, audio });
 						}
 					}
@@ -147,7 +161,7 @@ export const POST: RequestHandler = async ({ request }) => {
 					debugLog(
 						`[stream] TTS remaining: "${buffer.trim().substring(0, 50)}" (${Date.now() - t0}ms)`
 					);
-					const audio = await generateSpeech(buffer.trim());
+					const audio = await tts(buffer.trim());
 					send({ type: 'audio', text: buffer.trim(), audio });
 				}
 
@@ -169,7 +183,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				controller.close();
 			} catch (error: unknown) {
 				console.error('[stream] Error:', error);
-				send({ type: 'error', fallback_audio_url: fallbackUrl('error') });
+				send({ type: 'error', fallback_audio_url: fallbackUrl('error', ttsVoiceId) });
 				controller.close();
 			}
 		}
