@@ -8,6 +8,6 @@
   "source": "gutenberg",
   "source_id": "5200",
   "status": "available",
-  "tts_provider": "elevenlabs",
-  "voice_id": "EkK5I93UQWFDigLMpZcX"
+  "tts_provider": "openai",
+  "voice_id": "alloy"
 }
