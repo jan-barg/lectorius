@@ -50,8 +50,29 @@ export const handle: Handle = async ({ event, resolve }) => {
 		// Allow through if Redis is down
 	}
 
-	// 2. Access check (only for users without access code)
-	if (!accessCode) {
+	// 2. Validate access code cookie against the database
+	let validAccess = false;
+	if (accessCode) {
+		try {
+			const { data } = await getSupabase()
+				.from('access_codes')
+				.select('code')
+				.eq('code', accessCode)
+				.maybeSingle();
+
+			if (data) {
+				validAccess = true;
+			} else {
+				event.cookies.delete('lectorius_access', { path: '/' });
+			}
+		} catch (e) {
+			console.error('[hooks] Access code validation failed:', e);
+			validAccess = true; // fail open
+		}
+	}
+
+	// 3. Access check (only for users without valid access code)
+	if (!validAccess) {
 		try {
 			const { count, error } = await getSupabase()
 				.from('question_log')

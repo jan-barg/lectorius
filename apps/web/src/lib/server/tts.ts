@@ -23,7 +23,7 @@ export async function generateSpeech(options: TTSOptions): Promise<string> {
 
 async function generateOpenAI(text: string, voice?: string): Promise<Buffer> {
 	const speech = await getOpenAI().audio.speech.create({
-		model: 'tts-1',
+		model: 'gpt-4o-mini-tts',
 		voice: (voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') || 'nova',
 		input: text
 	});

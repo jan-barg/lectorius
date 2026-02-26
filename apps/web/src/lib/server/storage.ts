@@ -47,7 +47,14 @@ async function downloadJsonlSafe<T>(path: string): Promise<T[]> {
 	}
 }
 
+let booksCache: { data: BookListItem[]; ts: number } | null = null;
+const BOOKS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export async function listBooks(): Promise<BookListItem[]> {
+	if (booksCache && Date.now() - booksCache.ts < BOOKS_CACHE_TTL) {
+		return booksCache.data;
+	}
+
 	const { data: items, error } = await getSupabase().storage.from(BUCKET).list('', { limit: 100 });
 	if (error || !items) {
 		throw new Error(`Failed to list books: ${error?.message}`);
@@ -75,9 +82,12 @@ export async function listBooks(): Promise<BookListItem[]> {
 		})
 	);
 
-	return results
+	const books = results
 		.filter((r): r is PromiseFulfilledResult<BookListItem> => r.status === 'fulfilled')
 		.map((r) => r.value);
+
+	booksCache = { data: books, ts: Date.now() };
+	return books;
 }
 
 export async function getBookDetail(bookId: string): Promise<GetBookResponse> {

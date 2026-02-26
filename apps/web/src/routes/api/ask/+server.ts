@@ -36,12 +36,20 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	const forwarded = request.headers.get('x-forwarded-for');
 	const clientIP = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
-	const userName = request.headers.get('x-user-name') || '';
+	const userName = (request.headers.get('x-user-name') || '').trim().slice(0, 100);
 
 	const { book_id, chunk_index, audio_base64 } = await request.json();
 
-	if (!book_id || !chunk_index || !audio_base64) {
-		return sseError('Missing required fields', 'error');
+	if (typeof audio_base64 !== 'string' || audio_base64.length > 5_000_000) {
+		return sseError('Audio too large', 'error');
+	}
+
+	if (typeof book_id !== 'string' || !book_id.trim()) {
+		return sseError('Invalid book_id', 'error');
+	}
+
+	if (!Number.isInteger(chunk_index) || chunk_index < 1) {
+		return sseError('Invalid chunk_index', 'error');
 	}
 
 	const bookData = await getCachedBook(book_id);

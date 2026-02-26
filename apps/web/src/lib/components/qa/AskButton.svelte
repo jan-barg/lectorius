@@ -20,6 +20,7 @@
 	let isRecording = false;
 	let isProcessing = false;
 	let isPlayingAnswer = false;
+	let actionLock = false;
 
 	let showAccessPrompt = false;
 	let accessCodeInput = '';
@@ -64,7 +65,8 @@
 	}
 
 	async function handlePointerDown() {
-		if (isRecording || isProcessing || isPlayingAnswer) return;
+		if (actionLock || isRecording || isProcessing || isPlayingAnswer) return;
+		actionLock = true;
 
 		try {
 			music.duck();
@@ -72,6 +74,7 @@
 			await recorder.startRecording();
 			qa.startRecording();
 		} catch (e) {
+			actionLock = false;
 			console.error("Failed to start recording:", e);
 			qa.setError("Microphone access denied");
 		}
@@ -141,6 +144,8 @@
 			console.error("Q&A failed:", e);
 			qa.setError("Something went wrong");
 			resumeAfterDelay();
+		} finally {
+			actionLock = false;
 		}
 	}
 
@@ -171,7 +176,13 @@
 				for (const line of lines) {
 					if (!line.startsWith("data: ")) continue;
 
-					const data = JSON.parse(line.slice(6));
+					let data: Record<string, unknown>;
+					try {
+						data = JSON.parse(line.slice(6));
+					} catch {
+						console.warn("[stream] Skipping malformed SSE message:", line);
+						continue;
+					}
 
 					if (data.type === "question") {
 						questionText = data.text;
