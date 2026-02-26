@@ -289,6 +289,7 @@
 		music.unduck();
 		answerAudio?.pause();
 		answerAudio = null;
+		qa.reset();
 	});
 </script>
 
