@@ -19,7 +19,7 @@
 	{/if}
 
 	<div
-		class="absolute bottom-0 inset-x-0 h-2/5 bg-gradient-to-t from-black/90 via-black/40 to-transparent backdrop-blur-md [mask-image:linear-gradient(to_top,black_50%,transparent)] pointer-events-none z-[11]"
+		class="absolute bottom-0 inset-x-0 h-2/5 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-[11]"
 	></div>
 
 	<div

@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
+import { dev } from '$app/environment';
 import { getSupabase } from '$lib/server/clients';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
@@ -27,7 +28,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	cookies.set('lectorius_access', code.trim(), {
 		path: '/',
 		httpOnly: true,
-		secure: true,
+		secure: !dev,
 		sameSite: 'lax',
 		maxAge: 60 * 60 * 24 * 30 // 30 days
 	});
