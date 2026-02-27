@@ -117,7 +117,7 @@
 <!-- onkeydown does nothin - but needed for accessibility (thank you svelte...) -->
 <div class="w-full group">
 	<div
-		class="relative h-[4px] w-full cursor-pointer overflow-visible rounded-full bg-muted/30 py-2 bg-clip-content transition-all"
+		class="relative h-[4px] group-hover:h-[5px] w-full cursor-pointer overflow-visible rounded-full bg-text/[0.07] dark:bg-white/[0.07] py-2 bg-clip-content transition-all duration-300"
 		bind:this={barEl}
 		onclick={handleClick}
 		onkeydown={() => {}}
@@ -131,31 +131,33 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-accent shadow-[0_0_12px_rgba(var(--color-accent),0.8)] transition-[width] duration-150"
+			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] group-hover:h-[5px] rounded-full bg-accent transition-all duration-300"
 			style="width: {progress}%"
 		>
+			<!-- Thumb with glow -->
 			<div
-				class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-50 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"
-			></div>
+				class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 rounded-full shadow-lg shadow-accent/30 scale-0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"
+			>
+				<div class="absolute inset-0 bg-accent rounded-full"></div>
+				<div class="absolute inset-[-3px] bg-accent/20 rounded-full blur-sm"></div>
+			</div>
 		</div>
 
 		{#if showTooltip}
 			<div
-				class="absolute bottom-full mb-3 -translate-x-1/2 whitespace-nowrap rounded-lg bg-surface/60 backdrop-blur-md border border-white/10 px-3 py-1.5 text-xs shadow-xl pointer-events-none z-50"
+				class="absolute bottom-full mb-4 -translate-x-1/2 whitespace-nowrap rounded-lg bg-text text-background px-3 py-1.5 text-[11px] shadow-xl pointer-events-none z-50"
 				style="left: {tooltipX}px"
 			>
-				<span class="text-text font-bold tracking-wide"
-					>{tooltipTime}</span
-				>
+				<span class="font-semibold tabular-nums">{tooltipTime}</span>
 				{#if tooltipChapter}
-					<span class="ml-1.5 text-muted">{tooltipChapter}</span>
+					<span class="ml-1.5 opacity-50 font-medium">{tooltipChapter}</span>
 				{/if}
 			</div>
 		{/if}
 	</div>
 
 	<div
-		class="mt-3 flex justify-between text-[11px] font-medium tracking-wide text-muted pointer-events-none"
+		class="mt-3 flex justify-between text-[10px] font-semibold tracking-wider text-muted/50 tabular-nums pointer-events-none"
 	>
 		<span>{formatTime(elapsedMs)}</span>
 		<span>{formatTime(totalDurationMs)}</span>

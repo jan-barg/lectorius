@@ -9,16 +9,16 @@
 </script>
 
 {#if newBooks.length > 0}
-	<section class="mt-12 mb-8">
-		<div class="mb-4 flex items-baseline justify-between">
-			<h2 class="text-2xl font-bold text-text">Read Something New</h2>
-			<span class="hidden text-sm font-medium text-muted md:inline-block">
-				Scroll to explore &rarr;
+	<section class="animate-fade-in-up stagger-3">
+		<div class="mb-7 flex items-baseline justify-between">
+			<h2 class="font-display text-3xl md:text-4xl font-light text-text tracking-tight">Read Something New</h2>
+			<span class="hidden text-[10px] font-semibold uppercase tracking-[0.2em] text-muted/40 md:inline-block">
+				Scroll &rarr;
 			</span>
 		</div>
 
 		<div
-			class="flex flex-row overflow-x-auto snap-x snap-mandatory gap-6 pb-12 pt-4 px-4 -mx-4 hide-scrollbar"
+			class="flex flex-row overflow-x-auto snap-x snap-mandatory gap-6 md:gap-8 pb-4 pt-2 px-1 -mx-1 hide-scrollbar"
 		>
 			{#each newBooks as book (book.book_id)}
 				<div class="flex-shrink-0 snap-start">

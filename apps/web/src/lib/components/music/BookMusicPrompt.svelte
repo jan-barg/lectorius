@@ -43,15 +43,15 @@
 </script>
 
 <div
-	class="fixed bottom-20 left-4 right-4 sm:right-auto sm:w-96 z-40"
+	class="fixed bottom-24 left-5 right-5 sm:right-auto sm:w-96 z-40"
 	transition:fly={{ y: 20, duration: 300 }}
 >
 	<div
-		class="rounded-2xl border border-white/10 bg-surface/95 shadow-xl backdrop-blur-md p-5 space-y-4"
+		class="rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/95 shadow-2xl shadow-black/15 dark:shadow-black/40 backdrop-blur-2xl p-6 space-y-5"
 	>
 		<div class="flex items-start gap-3">
 			<svg
-				class="h-5 w-5 shrink-0 text-accent mt-0.5"
+				class="h-5 w-5 shrink-0 text-accent/60 mt-0.5"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -63,21 +63,21 @@
 					d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"
 				/>
 			</svg>
-			<p class="text-sm text-text">
-				Would you like to listen to <span class="font-medium text-accent">{bookTitle}</span> theme
+			<p class="text-sm text-text leading-relaxed">
+				Would you like to listen to <span class="font-semibold text-accent">{bookTitle}</span> theme
 				music?
 			</p>
 		</div>
 
-		<div class="flex gap-3">
+		<div class="flex gap-2.5">
 			<button
-				class="flex-1 rounded-xl bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent/80"
+				class="flex-1 rounded-xl bg-text px-4 py-2.5 text-sm font-semibold text-background transition-all duration-300 hover:opacity-90 shadow-md shadow-text/10 dark:shadow-black/20"
 				onclick={accept}
 			>
 				Yes
 			</button>
 			<button
-				class="flex-1 rounded-xl border border-white/10 bg-surface px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-white/10 hover:text-text"
+				class="flex-1 rounded-xl border border-text/[0.05] dark:border-white/[0.05] bg-text/[0.02] dark:bg-white/[0.02] px-4 py-2.5 text-sm font-medium text-muted transition-all duration-300 hover:bg-text/[0.05] dark:hover:bg-white/[0.05] hover:text-text"
 				onclick={decline}
 			>
 				No, keep {currentPlaylistName}

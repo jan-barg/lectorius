@@ -220,57 +220,66 @@
 </script>
 
 <div
-	class="relative w-full h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden pt-6 pb-12 flex flex-col items-center"
+	class="relative w-full h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden pt-6 pb-16 flex flex-col items-center"
 >
+	<!-- Warm ambient glow behind cover — multi-layer -->
 	<div
-		class="absolute left-1/2 top-40 -translate-x-1/2 w-[500px] h-[500px] bg-accent/15 rounded-full blur-[100px] pointer-events-none z-[-1]"
+		class="absolute left-1/2 top-28 -translate-x-1/2 w-[450px] h-[450px] bg-accent/[0.08] dark:bg-accent/[0.05] rounded-full blur-[140px] pointer-events-none z-[-1] animate-glow-pulse"
+	></div>
+	<div
+		class="absolute left-1/2 top-40 -translate-x-1/2 w-[250px] h-[250px] bg-accent/[0.12] dark:bg-accent/[0.06] rounded-full blur-[80px] pointer-events-none z-[-1]"
 	></div>
 
 	<div
-		class="w-full max-w-xl mx-auto px-4 flex flex-col items-center text-center z-10"
+		class="w-full max-w-lg mx-auto px-4 flex flex-col items-center text-center z-10"
 	>
-		<div class="mb-6">
+		<!-- Cover art — the hero -->
+		<div class="relative mb-10 animate-fade-in-up">
+			<div
+				class="relative w-52 md:w-60 aspect-[3/4] rounded-xl overflow-hidden shadow-2xl shadow-black/25 dark:shadow-black/60 bg-surface transition-transform duration-700 ease-out hover:scale-[1.02]"
+			>
+				{#if loadedBook.cover_video_url}
+					<video
+						src={loadedBook.cover_video_url}
+						preload="auto"
+						muted
+						class="absolute inset-0 h-full w-full object-cover"
+						on:loadeddata={(e) => (e.currentTarget.currentTime = 0)}
+					></video>
+				{:else}
+					<div
+						class="absolute inset-0 flex h-full w-full items-center justify-center bg-gradient-to-br from-surface to-background"
+					>
+						<span class="font-display text-8xl italic text-accent/12">
+							{loadedBook.book.title.charAt(0)}
+						</span>
+					</div>
+				{/if}
+				<div
+					class="absolute inset-0 ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.06] pointer-events-none rounded-xl"
+				></div>
+			</div>
+		</div>
+
+		<!-- Title + Author -->
+		<div class="mb-10 animate-fade-in-up stagger-1">
 			<h1
-				class="font-outfit text-2xl md:text-3xl font-extrabold text-text drop-shadow-sm tracking-tight mb-1"
+				class="font-display text-3xl md:text-4xl font-light text-text tracking-tight leading-tight mb-2"
 			>
 				{loadedBook.book.title}
 			</h1>
 			{#if loadedBook.book.author}
 				<p
-					class="font-serif text-base md:text-lg italic text-muted drop-shadow-sm"
+					class="font-display text-lg italic text-muted/80"
 				>
 					{loadedBook.book.author}
 				</p>
 			{/if}
 		</div>
 
-		<div
-			class="relative w-48 md:w-56 aspect-[3/4] rounded-xl overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 mb-8 bg-surface transition-transform duration-500 hover:scale-[1.02]"
-		>
-			{#if loadedBook.cover_video_url}
-				<video
-					src={loadedBook.cover_video_url}
-					preload="auto"
-					muted
-					class="absolute inset-0 h-full w-full object-cover"
-					on:loadeddata={(e) => (e.currentTarget.currentTime = 0)}
-				></video>
-			{:else}
-				<div
-					class="absolute inset-0 flex h-full w-full items-center justify-center bg-surface/50"
-				>
-					<span class="text-6xl font-bold text-accent/20 font-serif">
-						{loadedBook.book.title.charAt(0)}
-					</span>
-				</div>
-			{/if}
-			<div
-				class="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl"
-			></div>
-		</div>
-
-		<div class="w-full max-w-md flex flex-col gap-6 items-center mb-8">
-			<div class="w-full px-2">
+		<!-- Playback controls -->
+		<div class="w-full max-w-sm flex flex-col gap-6 items-center mb-10 animate-fade-in-up stagger-2">
+			<div class="w-full">
 				<ProgressBar
 					playbackMap={loadedBook.playbackMap}
 					chapters={loadedBook.chapters}
@@ -284,7 +293,8 @@
 			</div>
 		</div>
 
-		<div class="flex justify-center mb-8 relative z-20">
+		<!-- Ask button -->
+		<div class="flex justify-center mb-12 relative z-20 animate-fade-in-up stagger-3">
 			<AskButton
 				bookId={loadedBook.book.book_id}
 				{recorder}
@@ -292,8 +302,9 @@
 			/>
 		</div>
 
+		<!-- Chapter list -->
 		<div
-			class="w-full bg-surface/40 dark:bg-surface/20 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl p-4 shadow-xl text-left transition-all"
+			class="w-full rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/50 dark:bg-surface/30 backdrop-blur-sm p-5 text-left animate-fade-in-up stagger-4"
 		>
 			<ChapterList
 				chapters={loadedBook.chapters}

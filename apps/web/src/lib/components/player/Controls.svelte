@@ -29,25 +29,25 @@
 
 	<button
 		onclick={() => onSkip(-15)}
-		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all hover:bg-surface hover:text-text active:scale-95"
+		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Skip back 15 seconds"
 	>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox="0 0 24 24"
 			fill="currentColor"
-			class="h-6 w-6"
+			class="h-5 w-5"
 		>
 			<path
 				d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3.5 8.5v7h7l-2.78-2.78C9.08 11.35 10.7 10.5 12.5 10.5c2.9 0 5.33 1.97 6.05 4.64l1.93-.51C19.56 11.1 16.34 8 12.5 8z"
 			/>
 		</svg>
-		<span class="text-[10px] font-bold">15</span>
+		<span class="text-[9px] font-bold tabular-nums">15</span>
 	</button>
 
 	<button
 		onclick={togglePlay}
-		class="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-white shadow-[0_0_20px_rgba(var(--color-accent),0.4)] transition-all hover:bg-accent/80 hover:scale-105 active:scale-95"
+		class="relative flex h-16 w-16 items-center justify-center rounded-full bg-text text-background shadow-xl shadow-text/15 dark:shadow-black/40 ring-1 ring-text/10 dark:ring-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
 		aria-label={isPlaying ? "Pause" : "Play"}
 	>
 		{#if isPlaying}
@@ -55,7 +55,7 @@
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"
 				fill="currentColor"
-				class="h-7 w-7"
+				class="h-6 w-6"
 			>
 				<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
 			</svg>
@@ -64,7 +64,7 @@
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 24 24"
 				fill="currentColor"
-				class="h-7 w-7 ml-1"
+				class="h-6 w-6 ml-0.5"
 			>
 				<path d="M8 5v14l11-7z" />
 			</svg>
@@ -73,15 +73,15 @@
 
 	<button
 		onclick={() => onSkip(15)}
-		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all hover:bg-surface hover:text-text active:scale-95"
+		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Skip forward 15 seconds"
 	>
-		<span class="text-[10px] font-bold">15</span>
+		<span class="text-[9px] font-bold tabular-nums">15</span>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox="0 0 24 24"
 			fill="currentColor"
-			class="h-6 w-6"
+			class="h-5 w-5"
 		>
 			<path
 				d="M11.5 8c2.65 0 5.05 1.04 6.83 2.73L20.5 8.5v7h-7l2.78-2.78C14.92 11.35 13.3 10.5 11.5 10.5c-2.9 0-5.33 1.97-6.05 4.64l-1.93-.51C4.44 11.1 7.66 8 11.5 8z"
@@ -91,14 +91,14 @@
 
 	<button
 		onclick={cycleSpeed}
-		class="relative flex h-10 w-10 overflow-hidden items-center justify-center rounded-full text-sm font-bold text-muted transition-all hover:bg-surface hover:text-text active:scale-95"
+		class="relative flex h-10 w-10 overflow-hidden items-center justify-center rounded-full text-xs font-bold tabular-nums text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Change playback speed"
 	>
 		{#key speed}
 			<span
 				class="absolute"
-				in:fly={{ y: 15, duration: 250 }}
-				out:fly={{ y: -15, duration: 250 }}
+				in:fly={{ y: 12, duration: 200 }}
+				out:fly={{ y: -12, duration: 200 }}
 			>
 				{speed}x
 			</span>
