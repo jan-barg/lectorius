@@ -32,7 +32,7 @@
 			const res = await fetch('/api/verify-code', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ code: codeInput.trim() })
+				body: JSON.stringify({ code: codeInput.trim(), user_name: nameInput.trim() || localStorage.getItem('lectorius_user') || '' })
 			});
 			if (res.ok) {
 				codeInput = '';

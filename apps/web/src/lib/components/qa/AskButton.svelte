@@ -281,7 +281,7 @@
 			const res = await fetch('/api/verify-code', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ code: accessCodeInput.trim() })
+				body: JSON.stringify({ code: accessCodeInput.trim(), user_name: localStorage.getItem('lectorius_user') || '' })
 			});
 			if (res.ok) {
 				showAccessPrompt = false;

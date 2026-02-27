@@ -7,10 +7,11 @@ import { getSupabase } from '$lib/server/clients';
 
 let ratelimit: Ratelimit | null = null;
 
-function getRatelimit(): Ratelimit {
+function getRatelimit(): Ratelimit | null {
 	if (!ratelimit) {
 		if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-			throw new Error('Missing UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN');
+			console.warn('[hooks] Missing UPSTASH_REDIS env vars — rate limiting disabled');
+			return null;
 		}
 		ratelimit = new Ratelimit({
 			redis: new Redis({
@@ -34,10 +35,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// 1. Rate limit check (applies to all users)
 	try {
-		const identifier = accessCode || `ip:${ip}`;
-		const { success } = await getRatelimit().limit(identifier);
-		if (!success) {
-			return json({ error: 'Too many questions. Try again later.' }, { status: 429 });
+		const rl = getRatelimit();
+		if (rl) {
+			const identifier = accessCode || `ip:${ip}`;
+			const { success } = await rl.limit(identifier);
+			if (!success) {
+				return json({ error: 'Too many questions. Try again later.' }, { status: 429 });
+			}
 		}
 	} catch (e) {
 		console.error('[hooks] Rate limit check failed:', e);

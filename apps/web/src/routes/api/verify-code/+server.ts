@@ -3,8 +3,8 @@ import { json } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import { getSupabase } from '$lib/server/clients';
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
-	const { code } = await request.json();
+export const POST: RequestHandler = async ({ request, cookies, getClientAddress }) => {
+	const { code, user_name } = await request.json();
 
 	if (!code || typeof code !== 'string' || !code.trim()) {
 		return json({ success: false, error: 'Missing code' }, { status: 400 });
@@ -23,6 +23,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 	if (!data) {
 		return json({ success: false, error: 'Invalid code' }, { status: 401 });
+	}
+
+	try {
+		await getSupabase().from('code_usage_log').insert({
+			code: code.trim(),
+			ip: getClientAddress(),
+			user_name: (typeof user_name === 'string' && user_name.trim()) || null
+		});
+	} catch (e) {
+		console.error('[verify-code] Failed to log usage:', e);
 	}
 
 	cookies.set('lectorius_access', code.trim(), {
