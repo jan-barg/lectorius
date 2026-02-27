@@ -64,7 +64,7 @@
 >
     <button
         onclick={toggleMute}
-        class="w-11 h-11 flex items-center justify-center text-muted hover:text-text transition-colors duration-200"
+        class="w-11 h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] transition-all duration-300"
         aria-label={isMuted ? 'Unmute' : 'Mute'}
     >
         {#if isMuted}
@@ -117,13 +117,13 @@
 
     <div
         class="overflow-hidden transition-all duration-300 ease-out flex items-center {isHovered || isDragging
-            ? 'w-20 opacity-100 pr-2'
+            ? 'w-24 opacity-100 pr-2'
             : 'w-0 opacity-0'}"
     >
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             bind:this={trackEl}
-            class="relative w-full h-1 bg-text/[0.08] dark:bg-white/[0.08] rounded-full cursor-pointer"
+            class="relative w-full h-[3px] bg-text/[0.08] dark:bg-white/[0.08] rounded-full cursor-pointer"
             onpointerdown={handleTrackPointerDown}
         >
             <div
@@ -131,7 +131,7 @@
                 style="width: {volume * 100}%"
             ></div>
             <div
-                class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-accent rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-accent rounded-full shadow-md shadow-accent/25 opacity-0 group-hover:opacity-100 transition-all duration-300"
                 style="left: calc({volume * 100}% - 5px)"
             ></div>
         </div>

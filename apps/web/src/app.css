@@ -4,31 +4,21 @@
 
 @layer base {
 	:root {
-		/* Light Mode (Warm Parchment) */
-		--color-background: 247 243 238;
-		/* #F7F3EE — warm cream */
+		/* Light — sunlit library, warm parchment */
+		--color-background: 244 240 233;
 		--color-surface: 255 255 255;
-		/* white */
-		--color-text: 26 22 20;
-		/* #1A1614 — deep warm black */
-		--color-muted: 140 126 114;
-		/* #8C7E72 — warm stone */
-		--color-accent: 194 112 62;
-		/* #C2703E — terracotta amber */
+		--color-text: 22 18 16;
+		--color-muted: 136 122 110;
+		--color-accent: 188 106 52;
 	}
 
 	.dark {
-		/* Dark Mode (Rich Umber) */
-		--color-background: 15 13 11;
-		/* #0F0D0B — warm deep black */
-		--color-surface: 28 25 22;
-		/* #1C1916 — warm dark surface */
-		--color-text: 237 232 225;
-		/* #EDE8E1 — warm cream white */
-		--color-muted: 122 111 100;
-		/* #7A6F64 — warm medium brown */
-		--color-accent: 212 149 106;
-		/* #D4956A — warm amber */
+		/* Dark — midnight reading room */
+		--color-background: 10 9 8;
+		--color-surface: 22 19 16;
+		--color-text: 242 238 232;
+		--color-muted: 116 105 94;
+		--color-accent: 220 160 114;
 	}
 }
 
@@ -38,42 +28,71 @@ html {
 	-moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes breathe {
-	0%,
-	100% {
-		transform: scaleX(1);
-		opacity: 0.5;
-	}
-	50% {
-		transform: scaleX(1.02);
-		opacity: 0.8;
-	}
+/* ─── Grain texture overlay ─── */
+.grain-overlay {
+	position: relative;
+}
+.grain-overlay::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	pointer-events: none;
+	opacity: 0.022;
+	mix-blend-mode: overlay;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-repeat: repeat;
+	background-size: 256px 256px;
+}
+.dark .grain-overlay::after {
+	opacity: 0.04;
 }
 
+/* ─── Animations ─── */
+@keyframes breathe {
+	0%, 100% { transform: scaleX(1); opacity: 0.35; }
+	50% { transform: scaleX(1.04); opacity: 0.65; }
+}
 .animate-breathe {
 	animation: breathe 8s ease-in-out infinite;
 }
 
 @keyframes fade-in-up {
-	from {
-		opacity: 0;
-		transform: translateY(12px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
+	from { opacity: 0; transform: translateY(20px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+	animation: fade-in-up 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.animate-fade-in-up {
-	animation: fade-in-up 0.6s ease-out both;
+/* Staggered entrance delays */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.22s; }
+.stagger-3 { animation-delay: 0.36s; }
+.stagger-4 { animation-delay: 0.52s; }
+.stagger-5 { animation-delay: 0.7s; }
+
+@keyframes glow-pulse {
+	0%, 100% { opacity: 0.4; transform: scale(1); }
+	50% { opacity: 0.7; transform: scale(1.08); }
+}
+.animate-glow-pulse {
+	animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes soft-ping {
+	0% { transform: scale(1); opacity: 0.6; }
+	75% { transform: scale(1.6); opacity: 0; }
+	100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-soft-ping {
+	animation: soft-ping 2.5s ease-out infinite;
 }
 
 .hide-scrollbar {
 	-ms-overflow-style: none;
 	scrollbar-width: none;
 }
-
 .hide-scrollbar::-webkit-scrollbar {
 	display: none;
 }

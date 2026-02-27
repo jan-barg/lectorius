@@ -30,9 +30,9 @@
 	let parts = $derived(hasName ? greeting.split(SLOT) : [greeting]);
 </script>
 
-<h1 class="font-display text-4xl md:text-6xl font-light text-text tracking-tight leading-[1.1] animate-fade-in-up">
+<h1 class="font-display text-5xl md:text-7xl font-extralight text-text tracking-[-0.02em] leading-[1.05] animate-fade-in-up">
 	{#if hasName}
-		{parts[0]}<span class="font-display italic text-accent">{name}</span>{parts[1]}
+		{parts[0]}<span class="font-display italic text-accent font-light">{name}</span>{parts[1]}
 	{:else}
 		{greeting}
 	{/if}

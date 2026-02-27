@@ -8,10 +8,10 @@
 	export let onToggleLoop: () => void;
 </script>
 
-<div class="flex items-center justify-center gap-3">
+<div class="flex items-center justify-center gap-3.5">
 	<!-- Rewind -->
 	<button
-		class="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-all duration-200 hover:text-text active:scale-90"
+		class="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		onclick={onRewind}
 		aria-label="Previous song"
 	>
@@ -22,7 +22,7 @@
 
 	<!-- Play/Pause -->
 	<button
-		class="flex h-10 w-10 items-center justify-center rounded-full bg-text text-background transition-all duration-200 hover:scale-105 active:scale-95"
+		class="flex h-11 w-11 items-center justify-center rounded-full bg-text text-background ring-1 ring-text/10 dark:ring-white/10 shadow-lg shadow-text/10 dark:shadow-black/30 transition-all duration-300 hover:scale-105 active:scale-95"
 		onclick={() => (isPlaying ? onPause() : onPlay())}
 		aria-label={isPlaying ? 'Pause' : 'Play'}
 	>
@@ -39,7 +39,7 @@
 
 	<!-- Skip -->
 	<button
-		class="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-all duration-200 hover:text-text active:scale-90"
+		class="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		onclick={onSkip}
 		aria-label="Next song"
 	>
@@ -50,10 +50,10 @@
 
 	<!-- Loop -->
 	<button
-		class="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 active:scale-90
+		class="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300 active:scale-90
 			{isLooping
-				? 'text-accent bg-accent/10'
-				: 'text-muted hover:text-text'}"
+				? 'text-accent bg-accent/[0.08]'
+				: 'text-muted hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04]'}"
 		onclick={onToggleLoop}
 		aria-label="Toggle loop"
 	>

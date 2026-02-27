@@ -18,13 +18,13 @@
 </script>
 
 {#if sortedBooks.length > 0}
-	<section>
-		<div class="mb-5 flex items-baseline justify-between">
-			<h2 class="font-display text-2xl md:text-3xl font-light text-text tracking-tight">Continue Reading</h2>
+	<section class="animate-fade-in-up stagger-2">
+		<div class="mb-7 flex items-baseline justify-between">
+			<h2 class="font-display text-3xl md:text-4xl font-light text-text tracking-tight">Continue Reading</h2>
 		</div>
 
 		<div
-			class="flex flex-row overflow-x-auto snap-x snap-mandatory gap-5 md:gap-7 pb-8 pt-2 px-1 -mx-1 hide-scrollbar"
+			class="flex flex-row overflow-x-auto snap-x snap-mandatory gap-6 md:gap-8 pb-4 pt-2 px-1 -mx-1 hide-scrollbar"
 		>
 			{#each sortedBooks as book (book.book_id)}
 				{@const entry = historyMap.get(book.book_id)}

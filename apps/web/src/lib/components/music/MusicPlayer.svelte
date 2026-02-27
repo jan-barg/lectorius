@@ -211,19 +211,19 @@
 </script>
 
 {#if hasPlaylist}
-	<div class="fixed bottom-4 left-4 right-4 sm:right-auto z-30 flex flex-col items-stretch">
+	<div class="fixed bottom-5 left-5 right-5 sm:right-auto z-30 flex flex-col items-stretch">
 		<!-- Expanded panel -->
 		{#if expanded}
 			<div
-				class="mb-2 w-full sm:w-[22rem] rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface/95 dark:bg-surface/95 shadow-xl shadow-black/10 dark:shadow-black/30 backdrop-blur-xl"
-				transition:fly={{ y: 16, duration: 250 }}
+				class="mb-2.5 w-full sm:w-[23rem] rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/95 dark:bg-surface/95 shadow-2xl shadow-black/15 dark:shadow-black/40 backdrop-blur-2xl"
+				transition:fly={{ y: 16, duration: 280 }}
 			>
-				<div class="p-5 space-y-4">
+				<div class="p-6 space-y-5">
 					<!-- Header -->
 					<div class="flex items-center justify-between">
-						<span class="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted/50">Music</span>
+						<span class="text-[9px] font-bold uppercase tracking-[0.2em] text-muted/40">Music</span>
 						<button
-							class="rounded-full p-1 text-muted transition-colors hover:text-text"
+							class="rounded-full p-1.5 text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04]"
 							onclick={() => (expanded = false)}
 							aria-label="Collapse music player"
 						>
@@ -240,7 +240,7 @@
 					/>
 
 					<p class="text-[11px] text-muted">
-						Now playing: <span class="font-medium text-text">{songName}</span>
+						Now playing: <span class="font-semibold text-text">{songName}</span>
 					</p>
 
 					<MusicPlaylist
@@ -268,37 +268,37 @@
 					<MusicVolumeSlider volume={$music.volume} onVolumeInput={handleVolumeInput} />
 
 					<button
-						class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors {$music.sync_with_book ? 'bg-accent/10 text-accent' : 'text-muted hover:bg-text/[0.03] dark:hover:bg-white/[0.03] hover:text-text'}"
+						class="flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-xs transition-all duration-300 {$music.sync_with_book ? 'bg-accent/[0.08] text-accent' : 'text-muted hover:bg-text/[0.03] dark:hover:bg-white/[0.03] hover:text-text'}"
 						onclick={() => music.toggleSync()}
 					>
 						<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
 							<path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
 							<path stroke-linecap="round" stroke-linejoin="round" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" />
 						</svg>
-						<span class="font-medium">Sync with audiobook</span>
+						<span class="font-semibold">Sync with audiobook</span>
 					</button>
 
-					<p class="text-center text-[9px] text-muted/70 tracking-wide">Generated with Eleven Music</p>
+					<p class="text-center text-[9px] text-muted/70 tracking-wider font-medium">Generated with Eleven Music</p>
 				</div>
 			</div>
 		{/if}
 
-		<!-- Collapsed bar -->
+		<!-- Collapsed bar — jewelry-like -->
 		<div
-			class="flex w-full sm:w-[22rem] items-center gap-2.5 rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface/90 dark:bg-surface/90 px-3.5 py-3 shadow-lg shadow-black/5 dark:shadow-black/20 backdrop-blur-xl"
+			class="flex w-full sm:w-[23rem] items-center gap-3 rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/90 dark:bg-surface/90 px-4 py-3.5 shadow-xl shadow-black/8 dark:shadow-black/25 backdrop-blur-2xl"
 		>
-			<svg class="h-4 w-4 shrink-0 text-accent" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+			<svg class="h-4 w-4 shrink-0 text-accent/80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round"
 					d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"
 				/>
 			</svg>
 
-			<span class="min-w-0 flex-1 truncate text-xs font-medium text-text">
+			<span class="min-w-0 flex-1 truncate text-xs font-semibold text-text">
 				{songName}
 			</span>
 
 			<button
-				class="rounded-full p-1 text-text transition-colors hover:text-accent"
+				class="rounded-full p-1.5 text-text transition-all duration-300 hover:text-accent hover:bg-text/[0.04] dark:hover:bg-white/[0.04]"
 				onclick={() => music.togglePlay()}
 				aria-label={$music.is_playing ? 'Pause' : 'Play'}
 			>
@@ -319,7 +319,7 @@
 			</div>
 
 			<button
-				class="rounded-full p-1 transition-colors {$music.sync_with_book ? 'text-accent' : 'text-muted hover:text-text'}"
+				class="rounded-full p-1.5 transition-all duration-300 {$music.sync_with_book ? 'text-accent' : 'text-muted hover:text-text'}"
 				onclick={() => music.toggleSync()}
 				aria-label={$music.sync_with_book ? 'Unsync from audiobook' : 'Sync with audiobook'}
 				title={$music.sync_with_book ? 'Synced with audiobook' : 'Sync with audiobook'}
@@ -331,11 +331,11 @@
 			</button>
 
 			<button
-				class="rounded-full p-1 text-muted transition-colors hover:text-text"
+				class="rounded-full p-1.5 text-muted transition-all duration-300 hover:text-text"
 				onclick={() => (expanded = !expanded)}
 				aria-label={expanded ? 'Collapse music player' : 'Expand music player'}
 			>
-				<svg class="h-3.5 w-3.5 transition-transform duration-200 {expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+				<svg class="h-3.5 w-3.5 transition-transform duration-300 {expanded ? 'rotate-180' : ''}" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
 				</svg>
 			</button>

@@ -24,12 +24,12 @@
 	}
 </script>
 
-<div class="flex items-center justify-center gap-3 sm:gap-5 w-full">
+<div class="flex items-center justify-center gap-4 sm:gap-6 w-full">
 	<Volume />
 
 	<button
 		onclick={() => onSkip(-15)}
-		class="group flex h-11 w-11 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-200 hover:text-text active:scale-90"
+		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Skip back 15 seconds"
 	>
 		<svg
@@ -42,12 +42,12 @@
 				d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3.5 8.5v7h7l-2.78-2.78C9.08 11.35 10.7 10.5 12.5 10.5c2.9 0 5.33 1.97 6.05 4.64l1.93-.51C19.56 11.1 16.34 8 12.5 8z"
 			/>
 		</svg>
-		<span class="text-[9px] font-bold">15</span>
+		<span class="text-[9px] font-bold tabular-nums">15</span>
 	</button>
 
 	<button
 		onclick={togglePlay}
-		class="flex h-14 w-14 items-center justify-center rounded-full bg-text text-background shadow-lg shadow-text/10 transition-all duration-200 hover:scale-105 active:scale-95"
+		class="relative flex h-16 w-16 items-center justify-center rounded-full bg-text text-background shadow-xl shadow-text/15 dark:shadow-black/40 ring-1 ring-text/10 dark:ring-white/10 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
 		aria-label={isPlaying ? "Pause" : "Play"}
 	>
 		{#if isPlaying}
@@ -73,10 +73,10 @@
 
 	<button
 		onclick={() => onSkip(15)}
-		class="group flex h-11 w-11 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-200 hover:text-text active:scale-90"
+		class="group flex h-12 w-12 items-center justify-center gap-0.5 rounded-full text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Skip forward 15 seconds"
 	>
-		<span class="text-[9px] font-bold">15</span>
+		<span class="text-[9px] font-bold tabular-nums">15</span>
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
 			viewBox="0 0 24 24"
@@ -91,7 +91,7 @@
 
 	<button
 		onclick={cycleSpeed}
-		class="relative flex h-9 w-9 overflow-hidden items-center justify-center rounded-full text-xs font-bold text-muted transition-all duration-200 hover:text-text active:scale-90"
+		class="relative flex h-10 w-10 overflow-hidden items-center justify-center rounded-full text-xs font-bold tabular-nums text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04] active:scale-90"
 		aria-label="Change playback speed"
 	>
 		{#key speed}

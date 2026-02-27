@@ -90,7 +90,7 @@
 </svelte:head>
 
 <div class="mx-auto max-w-5xl py-6">
-	<a href="/" class="mb-6 inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted transition-colors duration-200 hover:text-text">
+	<a href="/" class="mb-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted/60 transition-colors duration-300 hover:text-text">
 		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5">
 			<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
 		</svg>
@@ -98,8 +98,8 @@
 	</a>
 
 	{#if bookState?.is_loading}
-		<div class="flex justify-center py-24">
-			<div class="h-6 w-6 animate-spin rounded-full border-[1.5px] border-accent border-t-transparent"></div>
+		<div class="flex justify-center py-32">
+			<div class="h-5 w-5 animate-spin rounded-full border-[1.5px] border-accent border-t-transparent"></div>
 		</div>
 	{:else if bookState?.error}
 		<p class="text-center text-sm text-red-400/80 font-medium">{bookState.error}</p>

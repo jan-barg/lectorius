@@ -17,7 +17,7 @@
 
 <div class="w-full group">
 	<div
-		class="relative h-[3px] w-full cursor-pointer overflow-visible rounded-full bg-text/[0.08] dark:bg-white/[0.08] py-2 bg-clip-content"
+		class="relative h-[3px] group-hover:h-[4px] w-full cursor-pointer overflow-visible rounded-full bg-text/[0.06] dark:bg-white/[0.06] py-2 bg-clip-content transition-all duration-300"
 		onclick={handleClick}
 		onkeydown={() => {}}
 		role="slider"
@@ -28,13 +28,13 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-accent transition-[width] duration-150"
+			class="absolute left-0 top-1/2 -translate-y-1/2 h-[3px] group-hover:h-[4px] rounded-full bg-accent transition-all duration-300"
 			style="width: {progress}%"
 		>
-			<div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2.5 h-2.5 bg-accent rounded-full shadow-sm scale-0 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"></div>
+			<div class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2.5 h-2.5 bg-accent rounded-full shadow-md shadow-accent/30 scale-0 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"></div>
 		</div>
 	</div>
-	<div class="mt-1.5 flex justify-between text-[9px] font-medium tracking-wider tabular-nums text-muted/60 pointer-events-none">
+	<div class="mt-1.5 flex justify-between text-[9px] font-semibold tracking-wider tabular-nums text-muted/40 pointer-events-none">
 		<span>{formatTime(elapsedMs)}</span>
 		<span>{formatTime(totalMs)}</span>
 	</div>

@@ -309,21 +309,21 @@
 
 {#if showAccessPrompt}
 <div class="flex flex-col items-center gap-4 text-center">
-	<div class="rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface p-6 shadow-lg space-y-4 max-w-xs">
-		<p class="text-sm text-text font-medium">You've used your 3 free questions</p>
-		<p class="text-xs text-muted">Enter an access code for unlimited access.</p>
+	<div class="rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/80 backdrop-blur-lg p-7 shadow-xl space-y-5 max-w-xs">
+		<p class="text-sm text-text font-semibold">You've used your 3 free questions</p>
+		<p class="text-xs text-muted leading-relaxed">Enter an access code for unlimited access.</p>
 		<div class="flex gap-2">
 			<input
 				type="text"
 				bind:value={accessCodeInput}
 				onkeydown={(e) => e.key === 'Enter' && handleAccessCode()}
 				placeholder="Access code"
-				class="flex-1 min-w-0 rounded-lg border border-text/[0.08] dark:border-white/[0.08] bg-background px-3 py-2 text-sm text-text placeholder:text-muted/40 outline-none focus:border-accent/40 transition-colors"
+				class="flex-1 min-w-0 rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-background px-3.5 py-2.5 text-sm text-text placeholder:text-muted/40 outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/10 transition-all duration-200"
 			/>
 			<button
 				onclick={handleAccessCode}
 				disabled={!accessCodeInput.trim() || accessCodeLoading}
-				class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110 disabled:opacity-30"
+				class="rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 disabled:opacity-30"
 			>
 				{accessCodeLoading ? '...' : 'Unlock'}
 			</button>
@@ -333,7 +333,7 @@
 		{/if}
 		<button
 			onclick={() => (showAccessPrompt = false)}
-			class="text-xs text-muted hover:text-text transition-colors"
+			class="text-xs text-muted hover:text-text transition-colors duration-200"
 		>
 			Dismiss
 		</button>
@@ -343,6 +343,12 @@
 <div
 	class="relative inline-flex items-center justify-center group touch-none select-none isolate"
 >
+	<!-- Pulsing glow ring behind button in idle state -->
+	{#if !isRecording && !isProcessing && !isPlayingAnswer}
+		<div class="absolute inset-[-6px] rounded-full bg-accent/20 animate-soft-ping pointer-events-none"></div>
+		<div class="absolute inset-[-3px] rounded-full bg-accent/10 animate-glow-pulse pointer-events-none"></div>
+	{/if}
+
 	<button
 		onmouseenter={handleMouseEnter}
 		ontouchstart={handleTouchStart}
@@ -351,15 +357,15 @@
 		onpointerleave={handlePointerLeave}
 		oncontextmenu={(e) => e.preventDefault()}
 		disabled={isProcessing || isPlayingAnswer}
-		class="relative z-10 flex items-center justify-center gap-2.5 px-7 py-3.5 w-44 rounded-full text-sm font-semibold tracking-wide overflow-hidden transition-all duration-500 border
+		class="relative z-10 flex items-center justify-center gap-2.5 px-8 py-4 w-48 rounded-full text-sm font-semibold tracking-wide overflow-hidden transition-all duration-500 border
             {!isRecording && !isProcessing && !isPlayingAnswer
-			? 'bg-surface text-text border-text/[0.06] dark:border-white/[0.06] hover:border-accent/30 active:scale-95'
+			? 'bg-surface text-text border-text/[0.08] dark:border-white/[0.08] shadow-lg shadow-black/5 dark:shadow-black/20 hover:border-accent/40 hover:shadow-xl active:scale-95'
 			: ''}
             {isProcessing
-			? 'bg-surface text-accent border-accent/30'
+			? 'bg-surface text-accent border-accent/30 shadow-lg shadow-accent/10'
 			: ''}
             {isRecording || isPlayingAnswer
-			? 'border-transparent'
+			? 'border-transparent shadow-xl shadow-accent/20'
 			: ''}"
 		aria-label={isRecording ? "Release to send" : "Hold to ask a question"}
 	>

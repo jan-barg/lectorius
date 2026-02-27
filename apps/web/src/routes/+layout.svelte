@@ -15,21 +15,24 @@
 </script>
 
 <div
-	class="relative min-h-screen bg-background transition-colors duration-500 isolate"
+	class="grain-overlay relative min-h-screen bg-background transition-colors duration-500 isolate overflow-x-hidden"
 >
-	<!-- Ambient warm glow -->
+	<!-- Multi-layer ambient glow -->
 	<div
-		class="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2 -translate-y-1/3 h-[500px] w-[900px] rounded-full bg-accent/8 blur-[150px] dark:bg-accent/5 z-[-1]"
+		class="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-[700px] w-[1100px] rounded-full bg-accent/[0.06] blur-[180px] dark:bg-accent/[0.04] z-[-1]"
+	></div>
+	<div
+		class="pointer-events-none fixed right-0 top-1/3 translate-x-1/3 h-[500px] w-[500px] rounded-full bg-accent/[0.03] blur-[140px] dark:bg-accent/[0.02] z-[-1]"
 	></div>
 
 	<!-- Navigation -->
 	<nav
-		class="fixed top-0 inset-x-0 z-50 border-b border-text/[0.06] dark:border-white/[0.06] bg-background/80 backdrop-blur-xl"
+		class="fixed top-0 inset-x-0 z-50 border-b border-text/[0.05] dark:border-white/[0.05] bg-background/70 backdrop-blur-2xl backdrop-saturate-150"
 	>
-		<div class="max-w-6xl mx-auto px-6 sm:px-10 flex justify-between items-center h-14">
-			<a href="/" class="font-display text-xl tracking-wide italic text-text transition-colors">Lectorius</a>
+		<div class="max-w-6xl mx-auto px-6 sm:px-10 flex justify-between items-center h-16">
+			<a href="/" class="font-display text-2xl tracking-wide italic text-text transition-colors hover:text-accent duration-300">Lectorius</a>
 			<button
-				class="rounded-full p-2 text-muted transition-all duration-200 hover:text-text hover:bg-text/5"
+				class="rounded-full p-2.5 text-muted transition-all duration-300 hover:text-text hover:bg-text/[0.04] dark:hover:bg-white/[0.04]"
 				onclick={() => (settingsOpen = !settingsOpen)}
 				aria-label="Settings"
 			>
@@ -55,7 +58,7 @@
 		</div>
 	</nav>
 
-	<main class="w-full max-w-6xl mx-auto px-6 sm:px-10 pt-20 pb-16">
+	<main class="w-full max-w-6xl mx-auto px-6 sm:px-10 pt-24 pb-20">
 		<slot />
 	</main>
 

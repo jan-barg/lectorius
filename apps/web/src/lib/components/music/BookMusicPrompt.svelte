@@ -43,15 +43,15 @@
 </script>
 
 <div
-	class="fixed bottom-20 left-4 right-4 sm:right-auto sm:w-96 z-40"
+	class="fixed bottom-24 left-5 right-5 sm:right-auto sm:w-96 z-40"
 	transition:fly={{ y: 20, duration: 300 }}
 >
 	<div
-		class="rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface/95 shadow-lg backdrop-blur-md p-5 space-y-4"
+		class="rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/95 shadow-2xl shadow-black/15 dark:shadow-black/40 backdrop-blur-2xl p-6 space-y-5"
 	>
 		<div class="flex items-start gap-3">
 			<svg
-				class="h-5 w-5 shrink-0 text-accent/70 mt-0.5"
+				class="h-5 w-5 shrink-0 text-accent/60 mt-0.5"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -71,13 +71,13 @@
 
 		<div class="flex gap-2.5">
 			<button
-				class="flex-1 rounded-lg bg-text px-4 py-2.5 text-sm font-semibold text-background transition-all duration-200 hover:opacity-90"
+				class="flex-1 rounded-xl bg-text px-4 py-2.5 text-sm font-semibold text-background transition-all duration-300 hover:opacity-90 shadow-md shadow-text/10 dark:shadow-black/20"
 				onclick={accept}
 			>
 				Yes
 			</button>
 			<button
-				class="flex-1 rounded-lg border border-text/[0.06] dark:border-white/[0.06] bg-text/[0.03] dark:bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-muted transition-all duration-200 hover:bg-text/[0.06] dark:hover:bg-white/[0.06] hover:text-text"
+				class="flex-1 rounded-xl border border-text/[0.05] dark:border-white/[0.05] bg-text/[0.02] dark:bg-white/[0.02] px-4 py-2.5 text-sm font-medium text-muted transition-all duration-300 hover:bg-text/[0.05] dark:hover:bg-white/[0.05] hover:text-text"
 				onclick={decline}
 			>
 				No, keep {currentPlaylistName}

@@ -19,20 +19,19 @@
 </script>
 
 <div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-md"
-	transition:fade={{ duration: 400 }}
+	class="fixed inset-0 z-50 flex items-center justify-center bg-background/90 backdrop-blur-xl"
+	transition:fade={{ duration: 500 }}
 >
-	<div class="w-full max-w-sm px-6" transition:fly={{ y: 20, duration: 500 }}>
+	<div class="w-full max-w-sm px-6" transition:fly={{ y: 24, duration: 600 }}>
 		<div
-			class="rounded-2xl border border-text/[0.06] dark:border-white/[0.06] bg-surface p-10 shadow-2xl shadow-black/10 dark:shadow-black/40 space-y-8 text-center"
+			class="rounded-2xl border border-text/[0.05] dark:border-white/[0.05] bg-surface/95 backdrop-blur-2xl p-12 shadow-2xl shadow-black/10 dark:shadow-black/50 space-y-10 text-center"
 		>
-			<div class="space-y-3">
-				<h1 class="font-display text-3xl font-light text-muted tracking-tight">
-					Welcome to
-					<br />
-					<span class="text-4xl italic text-accent">Lectorius</span>
+			<div class="space-y-4">
+				<h1 class="font-display tracking-tight leading-[1.1]">
+					<span class="block text-3xl font-extralight text-muted/70">Welcome to</span>
+					<span class="block text-5xl italic text-accent font-light mt-1">Lectorius</span>
 				</h1>
-				<p class="text-sm text-muted font-medium">What should we call you?</p>
+				<p class="text-sm text-muted/60 font-medium tracking-wide">What should we call you?</p>
 			</div>
 			<!-- svelte-ignore a11y_autofocus -->
 			<input
@@ -40,13 +39,13 @@
 				bind:value={inputValue}
 				onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
 				placeholder="Your name"
-				class="w-full rounded-lg border border-text/[0.08] dark:border-white/[0.08] bg-background px-4 py-3 text-center text-base text-text placeholder:text-muted/40 outline-none focus:border-accent/40 focus:ring-2 focus:ring-accent/10 transition-all duration-200"
+				class="w-full rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-text/[0.02] dark:bg-white/[0.02] px-5 py-3.5 text-center text-base text-text placeholder:text-muted/30 outline-none focus:border-accent/30 focus:ring-2 focus:ring-accent/8 transition-all duration-300"
 				autofocus
 			/>
 			<button
 				onclick={handleSubmit}
 				disabled={!inputValue.trim()}
-				class="w-full rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed"
+				class="w-full rounded-xl bg-accent px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition-all duration-300 hover:brightness-110 hover:shadow-xl hover:shadow-accent/25 disabled:opacity-30 disabled:shadow-none disabled:cursor-not-allowed"
 			>
 				Continue
 			</button>
