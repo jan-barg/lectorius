@@ -8,6 +8,7 @@ const MIME_TYPE = 'audio/webm;codecs=opus';
 export class Recorder {
 	private mediaRecorder: MediaRecorder | null = null;
 	private warmRecorder: MediaRecorder | null = null;
+	private isWarming = false;
 	private chunks: Blob[] = [];
 	private stream: MediaStream | null = null;
 
@@ -36,7 +37,9 @@ export class Recorder {
 	 * Fire-and-forget — errors are silently ignored.
 	 */
 	warmUp(): void {
-		if (this.warmRecorder || this.mediaRecorder?.state === 'recording') return;
+		if (this.warmRecorder || this.isWarming || this.mediaRecorder?.state === 'recording') return;
+
+		this.isWarming = true;
 
 		const doWarmUp = async () => {
 			if (!this.stream || !this.isStreamAlive()) {
@@ -46,7 +49,7 @@ export class Recorder {
 			this.warmRecorder = new MediaRecorder(this.stream, { mimeType: MIME_TYPE });
 		};
 
-		doWarmUp().catch(() => {});
+		doWarmUp().catch(() => {}).finally(() => { this.isWarming = false; });
 	}
 
 	async startRecording(): Promise<void> {

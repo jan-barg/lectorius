@@ -118,10 +118,11 @@ LISTENER'S QUESTION:
 }
 
 /**
- * Decide if RAG retrieval is needed based on question keywords.
+ * Decide if RAG retrieval is needed. Defaults to true — only skip for
+ * greetings, meta/app questions, and simple word definitions.
  */
 export function shouldUseRAG(question: string): boolean {
-	const ragTriggers =
-		/\b(when|first|again|earlier|before|remember|back when|who was|what was|where was|why did|how did)\b/i;
-	return ragTriggers.test(question);
+	const skipPatterns =
+		/^(hi|hello|hey|thanks|thank you)\b|^what can you do|^how does this (work|app)|^(what does .{1,30} mean|define \w+)\??$/i;
+	return !skipPatterns.test(question.trim());
 }

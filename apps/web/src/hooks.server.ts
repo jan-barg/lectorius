@@ -24,18 +24,12 @@ function getRatelimit(): Ratelimit {
 	return ratelimit;
 }
 
-function getClientIP(request: Request): string {
-	const forwarded = request.headers.get('x-forwarded-for');
-	if (forwarded) return forwarded.split(',')[0].trim();
-	return '127.0.0.1';
-}
-
 export const handle: Handle = async ({ event, resolve }) => {
 	if (event.url.pathname !== '/api/ask' || event.request.method !== 'POST') {
 		return resolve(event);
 	}
 
-	const ip = getClientIP(event.request);
+	const ip = event.getClientAddress();
 	const accessCode = event.cookies.get('lectorius_access');
 
 	// 1. Rate limit check (applies to all users)
@@ -47,7 +41,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	} catch (e) {
 		console.error('[hooks] Rate limit check failed:', e);
-		// Allow through if Redis is down
+		// Fail open — Redis outage should not block users
 	}
 
 	// 2. Validate access code cookie against the database
@@ -67,7 +61,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			}
 		} catch (e) {
 			console.error('[hooks] Access code validation failed:', e);
-			validAccess = true; // fail open
+			// Fall through to free-tier IP check
 		}
 	}
 
@@ -81,12 +75,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 			if (error) {
 				console.error('[hooks] Question count query failed:', error);
+				return json({ error: 'Service temporarily unavailable' }, { status: 503 });
 			} else if (count !== null && count >= 3) {
 				return json({ error: 'Free limit reached' }, { status: 403 });
 			}
 		} catch (e) {
 			console.error('[hooks] Access check failed:', e);
-			// Allow through on error
+			return json({ error: 'Service temporarily unavailable' }, { status: 503 });
 		}
 	}
 

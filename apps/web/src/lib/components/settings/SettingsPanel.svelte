@@ -2,7 +2,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import ThemeSwitcher from './ThemeSwitcher.svelte';
 	import { clearAllReadingHistory } from '$lib/stores/reading-history';
-	import { userName, unlocked } from '$lib/stores/user';
+	import { userName } from '$lib/stores/user';
 
 	export let open = false;
 	export let onClose: () => void;
@@ -14,6 +14,7 @@
 	let codeInput = '';
 	let codeError = '';
 	let codeLoading = false;
+	let codeSuccess = false;
 
 	$: if (open) nameInput = $userName;
 
@@ -34,8 +35,8 @@
 				body: JSON.stringify({ code: codeInput.trim() })
 			});
 			if (res.ok) {
-				unlocked.unlock();
 				codeInput = '';
+				codeSuccess = true;
 			} else {
 				codeError = 'Invalid code, try again';
 			}
@@ -110,7 +111,7 @@
 
 			<div>
 				<span class="mb-2 block text-sm font-medium text-muted">Access</span>
-				{#if $unlocked}
+				{#if codeSuccess}
 					<p class="text-sm text-green-500 font-medium">Unlimited access &#10003;</p>
 				{:else}
 					<div class="space-y-2">

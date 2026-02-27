@@ -26,7 +26,6 @@
 	let accessCodeInput = '';
 	let accessCodeError = '';
 	let accessCodeLoading = false;
-	let isUnlocked = browser ? localStorage.getItem('lectorius_unlocked') === 'true' : false;
 
 	const unsub = qa.subscribe((s) => {
 		isRecording = s.is_recording;
@@ -125,6 +124,12 @@
 
 				if (response.status === 429) {
 					qa.setError('Too many questions — slow down a bit');
+					resumeAfterDelay();
+					return;
+				}
+
+				if (response.status === 503) {
+					qa.setError('Service temporarily unavailable. Try again in a moment.');
 					resumeAfterDelay();
 					return;
 				}
@@ -279,8 +284,6 @@
 				body: JSON.stringify({ code: accessCodeInput.trim() })
 			});
 			if (res.ok) {
-				if (browser) localStorage.setItem('lectorius_unlocked', 'true');
-				isUnlocked = true;
 				showAccessPrompt = false;
 				accessCodeInput = '';
 			} else {
