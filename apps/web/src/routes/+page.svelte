@@ -43,21 +43,21 @@
 </script>
 
 <svelte:head>
-	<title>lectorius</title>
+	<title>Lectorius</title>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl px-4 py-12">
+<div class="mx-auto max-w-5xl py-10 md:py-16">
 	<Greeting />
 	<TextureBar />
 
 	{#if loading}
-		<div class="flex justify-center py-20">
-			<div class="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent"></div>
+		<div class="flex justify-center py-24">
+			<div class="h-6 w-6 animate-spin rounded-full border-[1.5px] border-accent border-t-transparent"></div>
 		</div>
 	{:else if error}
-		<p class="text-center text-red-400">{error}</p>
+		<p class="text-center text-sm text-red-400/80 font-medium">{error}</p>
 	{:else}
-		<div class="space-y-10">
+		<div class="space-y-14">
 			<ContinueReading {books} {history} />
 			<ReadSomethingNew {books} {startedBookIds} />
 		</div>

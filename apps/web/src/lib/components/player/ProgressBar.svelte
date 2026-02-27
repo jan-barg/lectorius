@@ -117,7 +117,7 @@
 <!-- onkeydown does nothin - but needed for accessibility (thank you svelte...) -->
 <div class="w-full group">
 	<div
-		class="relative h-[4px] w-full cursor-pointer overflow-visible rounded-full bg-muted/30 py-2 bg-clip-content transition-all"
+		class="relative h-[3px] w-full cursor-pointer overflow-visible rounded-full bg-text/[0.08] dark:bg-white/[0.08] py-2 bg-clip-content transition-all"
 		bind:this={barEl}
 		onclick={handleClick}
 		onkeydown={() => {}}
@@ -131,31 +131,29 @@
 		tabindex="0"
 	>
 		<div
-			class="absolute left-0 top-1/2 -translate-y-1/2 h-[4px] rounded-full bg-accent shadow-[0_0_12px_rgba(var(--color-accent),0.8)] transition-[width] duration-150"
+			class="absolute left-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-accent transition-[width] duration-150"
 			style="width: {progress}%"
 		>
 			<div
-				class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-50 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"
+				class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-accent rounded-full shadow-sm scale-0 opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100 pointer-events-none"
 			></div>
 		</div>
 
 		{#if showTooltip}
 			<div
-				class="absolute bottom-full mb-3 -translate-x-1/2 whitespace-nowrap rounded-lg bg-surface/60 backdrop-blur-md border border-white/10 px-3 py-1.5 text-xs shadow-xl pointer-events-none z-50"
+				class="absolute bottom-full mb-3 -translate-x-1/2 whitespace-nowrap rounded-md bg-text text-background px-2.5 py-1 text-[11px] shadow-lg pointer-events-none z-50"
 				style="left: {tooltipX}px"
 			>
-				<span class="text-text font-bold tracking-wide"
-					>{tooltipTime}</span
-				>
+				<span class="font-semibold tabular-nums">{tooltipTime}</span>
 				{#if tooltipChapter}
-					<span class="ml-1.5 text-muted">{tooltipChapter}</span>
+					<span class="ml-1 opacity-60">{tooltipChapter}</span>
 				{/if}
 			</div>
 		{/if}
 	</div>
 
 	<div
-		class="mt-3 flex justify-between text-[11px] font-medium tracking-wide text-muted pointer-events-none"
+		class="mt-2.5 flex justify-between text-[10px] font-medium tracking-wider text-muted/70 tabular-nums pointer-events-none"
 	>
 		<span>{formatTime(elapsedMs)}</span>
 		<span>{formatTime(totalDurationMs)}</span>

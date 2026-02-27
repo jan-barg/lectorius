@@ -190,11 +190,11 @@
 					}
 
 					if (data.type === "question") {
-						questionText = data.text;
+						questionText = data.text as string;
 					}
 
 					if (data.type === "audio") {
-						audioQueue.push(data.audio);
+						audioQueue.push(data.audio as string);
 
 						if (!firstAudioReceived) {
 							firstAudioReceived = true;
@@ -214,9 +214,9 @@
 					if (data.type === "error") {
 						console.error("[stream] Error:", data.error);
 						if (data.fallback_audio_url) {
-							playFallbackAudio(data.fallback_audio_url);
+							playFallbackAudio(data.fallback_audio_url as string);
 						} else {
-							qa.setError(data.error || "Something went wrong");
+							qa.setError((data.error as string) || "Something went wrong");
 							resumeAfterDelay();
 						}
 						return;
@@ -309,7 +309,7 @@
 
 {#if showAccessPrompt}
 <div class="flex flex-col items-center gap-4 text-center">
-	<div class="rounded-2xl border border-white/10 bg-surface/95 p-6 shadow-xl backdrop-blur-md space-y-4 max-w-xs">
+	<div class="rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface p-6 shadow-lg space-y-4 max-w-xs">
 		<p class="text-sm text-text font-medium">You've used your 3 free questions</p>
 		<p class="text-xs text-muted">Enter an access code for unlimited access.</p>
 		<div class="flex gap-2">
@@ -318,18 +318,18 @@
 				bind:value={accessCodeInput}
 				onkeydown={(e) => e.key === 'Enter' && handleAccessCode()}
 				placeholder="Access code"
-				class="flex-1 min-w-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-text placeholder:text-muted/50 outline-none focus:border-accent/50 transition-colors"
+				class="flex-1 min-w-0 rounded-lg border border-text/[0.08] dark:border-white/[0.08] bg-background px-3 py-2 text-sm text-text placeholder:text-muted/40 outline-none focus:border-accent/40 transition-colors"
 			/>
 			<button
 				onclick={handleAccessCode}
 				disabled={!accessCodeInput.trim() || accessCodeLoading}
-				class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent/80 disabled:opacity-40"
+				class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-110 disabled:opacity-30"
 			>
 				{accessCodeLoading ? '...' : 'Unlock'}
 			</button>
 		</div>
 		{#if accessCodeError}
-			<p class="text-xs text-red-400">{accessCodeError}</p>
+			<p class="text-xs text-red-400/80">{accessCodeError}</p>
 		{/if}
 		<button
 			onclick={() => (showAccessPrompt = false)}
@@ -351,12 +351,15 @@
 		onpointerleave={handlePointerLeave}
 		oncontextmenu={(e) => e.preventDefault()}
 		disabled={isProcessing || isPlayingAnswer}
-		class="relative z-10 flex items-center justify-center gap-3 px-8 py-4 w-48 rounded-full font-bold text-lg tracking-wide overflow-hidden transition-all duration-500 bg-surface text-text border border-white/5
+		class="relative z-10 flex items-center justify-center gap-2.5 px-7 py-3.5 w-44 rounded-full text-sm font-semibold tracking-wide overflow-hidden transition-all duration-500 border
             {!isRecording && !isProcessing && !isPlayingAnswer
-			? 'hover:bg-surface/80 hover:shadow-[0_0_30px_rgba(var(--color-accent),0.3)] active:scale-95'
+			? 'bg-surface text-text border-text/[0.06] dark:border-white/[0.06] hover:border-accent/30 active:scale-95'
 			: ''}
             {isProcessing
-			? 'shadow-[0_0_40px_rgba(var(--color-accent),0.6)] border-accent/50'
+			? 'bg-surface text-accent border-accent/30'
+			: ''}
+            {isRecording || isPlayingAnswer
+			? 'border-transparent'
 			: ''}"
 		aria-label={isRecording ? "Release to send" : "Hold to ask a question"}
 	>
@@ -370,12 +373,12 @@
 		></div>
 
 		<div
-			class="relative z-20 flex items-center justify-center gap-3 w-full transition-colors duration-500
+			class="relative z-20 flex items-center justify-center gap-2.5 w-full transition-colors duration-500
             {isRecording || isPlayingAnswer ? 'text-white' : ''}
             {isProcessing ? 'text-accent' : ''}"
 		>
 			<div
-				class="relative w-6 h-6 flex-shrink-0 flex items-center justify-center"
+				class="relative w-5 h-5 flex-shrink-0 flex items-center justify-center"
 			>
 				<svg
 					class="absolute inset-0 w-full h-full transition-all duration-300 {isProcessing ||
@@ -385,7 +388,7 @@
 					fill="none"
 					viewBox="0 0 24 24"
 					stroke="currentColor"
-					stroke-width="2"
+					stroke-width="1.5"
 				>
 					<path
 						stroke-linecap="round"
@@ -406,15 +409,15 @@
 						viewBox="0 0 24 24"
 					>
 						<circle
-							class="opacity-25"
+							class="opacity-20"
 							cx="12"
 							cy="12"
 							r="10"
 							stroke="currentColor"
-							stroke-width="3"
+							stroke-width="2"
 						></circle>
 						<path
-							class="opacity-75"
+							class="opacity-80"
 							fill="currentColor"
 							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 						></path>
@@ -433,7 +436,7 @@
 				</div>
 			</div>
 
-			<span class="whitespace-nowrap w-24 text-left">
+			<span class="whitespace-nowrap w-20 text-left">
 				{#if isRecording}
 					Listening...
 				{:else if isProcessing}
@@ -450,16 +453,14 @@
 {/if}
 
 <style>
-	/* Bulletproof CSS Wave Animation */
 	.wave {
-		width: 3px;
-		height: 6px; /* Default height */
+		width: 2px;
+		height: 5px;
 		background-color: white;
 		border-radius: 9999px;
 		animation: wave-anim ease-in-out infinite;
 	}
 
-	/* Unique timings for organic bounce */
 	.wave-1 {
 		animation-duration: 0.7s;
 		animation-delay: -0.2s;
@@ -480,10 +481,10 @@
 	@keyframes wave-anim {
 		0%,
 		100% {
-			height: 6px;
+			height: 5px;
 		}
 		50% {
-			height: 22px;
+			height: 18px;
 		}
 	}
 </style>

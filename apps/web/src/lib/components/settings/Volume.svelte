@@ -58,13 +58,13 @@
 <div
     role="group"
     aria-label="Volume controls"
-    class="group relative flex items-center h-12"
+    class="group relative flex items-center h-11"
     onmouseenter={() => (isHovered = true)}
     onmouseleave={() => { if (!isDragging) isHovered = false; }}
 >
     <button
         onclick={toggleMute}
-        class="w-12 h-12 flex items-center justify-center text-muted hover:text-text transition-colors"
+        class="w-11 h-11 flex items-center justify-center text-muted hover:text-text transition-colors duration-200"
         aria-label={isMuted ? 'Unmute' : 'Mute'}
     >
         {#if isMuted}
@@ -74,7 +74,7 @@
                 viewBox="0 0 24 24"
                 stroke-width="1.5"
                 stroke="currentColor"
-                class="w-5 h-5"
+                class="w-[18px] h-[18px]"
             >
                 <path
                     stroke-linecap="round"
@@ -89,7 +89,7 @@
                 viewBox="0 0 24 24"
                 stroke-width="1.5"
                 stroke="currentColor"
-                class="w-5 h-5"
+                class="w-[18px] h-[18px]"
             >
                 <path
                     stroke-linecap="round"
@@ -104,7 +104,7 @@
                 viewBox="0 0 24 24"
                 stroke-width="1.5"
                 stroke="currentColor"
-                class="w-5 h-5"
+                class="w-[18px] h-[18px]"
             >
                 <path
                     stroke-linecap="round"
@@ -117,13 +117,13 @@
 
     <div
         class="overflow-hidden transition-all duration-300 ease-out flex items-center {isHovered || isDragging
-            ? 'w-24 opacity-100 pr-2'
+            ? 'w-20 opacity-100 pr-2'
             : 'w-0 opacity-0'}"
     >
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
             bind:this={trackEl}
-            class="relative w-full h-1.5 bg-black/10 dark:bg-white/10 rounded-full cursor-pointer"
+            class="relative w-full h-1 bg-text/[0.08] dark:bg-white/[0.08] rounded-full cursor-pointer"
             onpointerdown={handleTrackPointerDown}
         >
             <div
@@ -131,8 +131,8 @@
                 style="width: {volume * 100}%"
             ></div>
             <div
-                class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-sm border border-black/5 dark:border-white/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                style="left: calc({volume * 100}% - 6px)"
+                class="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-accent rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                style="left: calc({volume * 100}% - 5px)"
             ></div>
         </div>
     </div>

@@ -11,8 +11,9 @@ export default {
 				accent: 'rgb(var(--color-accent) / <alpha-value>)'
 			},
 			fontFamily: {
-				sans: ['Outfit', 'sans-serif'],
-				serif: ['Merriweather', 'serif']
+				sans: ['Manrope', 'system-ui', 'sans-serif'],
+				serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+				display: ['Cormorant Garamond', 'Georgia', 'serif']
 			}
 		}
 	},

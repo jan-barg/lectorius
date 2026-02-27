@@ -60,8 +60,8 @@
 			onerror={() => (failed = true)}
 		></video>
 	{:else}
-		<div class="flex h-full w-full items-center justify-center bg-background">
-			<span class="text-5xl font-bold text-accent/30">{fallbackChar}</span>
+		<div class="flex h-full w-full items-center justify-center bg-surface dark:bg-surface">
+			<span class="font-display text-6xl italic text-accent/20">{fallbackChar}</span>
 		</div>
 	{/if}
 </div>

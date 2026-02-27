@@ -220,32 +220,19 @@
 </script>
 
 <div
-	class="relative w-full h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden pt-6 pb-12 flex flex-col items-center"
+	class="relative w-full h-[calc(100vh-5rem)] overflow-y-auto overflow-x-hidden pt-4 pb-12 flex flex-col items-center"
 >
+	<!-- Warm ambient glow behind cover -->
 	<div
-		class="absolute left-1/2 top-40 -translate-x-1/2 w-[500px] h-[500px] bg-accent/15 rounded-full blur-[100px] pointer-events-none z-[-1]"
+		class="absolute left-1/2 top-32 -translate-x-1/2 w-[400px] h-[400px] bg-accent/10 dark:bg-accent/[0.06] rounded-full blur-[120px] pointer-events-none z-[-1]"
 	></div>
 
 	<div
-		class="w-full max-w-xl mx-auto px-4 flex flex-col items-center text-center z-10"
+		class="w-full max-w-lg mx-auto px-4 flex flex-col items-center text-center z-10"
 	>
-		<div class="mb-6">
-			<h1
-				class="font-outfit text-2xl md:text-3xl font-extrabold text-text drop-shadow-sm tracking-tight mb-1"
-			>
-				{loadedBook.book.title}
-			</h1>
-			{#if loadedBook.book.author}
-				<p
-					class="font-serif text-base md:text-lg italic text-muted drop-shadow-sm"
-				>
-					{loadedBook.book.author}
-				</p>
-			{/if}
-		</div>
-
+		<!-- Cover art — the hero -->
 		<div
-			class="relative w-48 md:w-56 aspect-[3/4] rounded-xl overflow-hidden shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)] ring-1 ring-white/10 mb-8 bg-surface transition-transform duration-500 hover:scale-[1.02]"
+			class="relative w-44 md:w-52 aspect-[3/4] rounded-lg overflow-hidden shadow-xl shadow-black/20 dark:shadow-black/50 mb-8 bg-surface transition-transform duration-500 hover:scale-[1.02]"
 		>
 			{#if loadedBook.cover_video_url}
 				<video
@@ -257,20 +244,37 @@
 				></video>
 			{:else}
 				<div
-					class="absolute inset-0 flex h-full w-full items-center justify-center bg-surface/50"
+					class="absolute inset-0 flex h-full w-full items-center justify-center bg-surface"
 				>
-					<span class="text-6xl font-bold text-accent/20 font-serif">
+					<span class="font-display text-7xl italic text-accent/15">
 						{loadedBook.book.title.charAt(0)}
 					</span>
 				</div>
 			{/if}
 			<div
-				class="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl"
+				class="absolute inset-0 ring-1 ring-inset ring-black/[0.06] dark:ring-white/[0.06] pointer-events-none rounded-lg"
 			></div>
 		</div>
 
-		<div class="w-full max-w-md flex flex-col gap-6 items-center mb-8">
-			<div class="w-full px-2">
+		<!-- Title + Author -->
+		<div class="mb-8">
+			<h1
+				class="font-display text-2xl md:text-3xl font-medium text-text tracking-tight leading-tight mb-1"
+			>
+				{loadedBook.book.title}
+			</h1>
+			{#if loadedBook.book.author}
+				<p
+					class="font-display text-base md:text-lg italic text-muted"
+				>
+					{loadedBook.book.author}
+				</p>
+			{/if}
+		</div>
+
+		<!-- Playback controls -->
+		<div class="w-full max-w-sm flex flex-col gap-5 items-center mb-8">
+			<div class="w-full">
 				<ProgressBar
 					playbackMap={loadedBook.playbackMap}
 					chapters={loadedBook.chapters}
@@ -284,7 +288,8 @@
 			</div>
 		</div>
 
-		<div class="flex justify-center mb-8 relative z-20">
+		<!-- Ask button -->
+		<div class="flex justify-center mb-10 relative z-20">
 			<AskButton
 				bookId={loadedBook.book.book_id}
 				{recorder}
@@ -292,8 +297,9 @@
 			/>
 		</div>
 
+		<!-- Chapter list -->
 		<div
-			class="w-full bg-surface/40 dark:bg-surface/20 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-3xl p-4 shadow-xl text-left transition-all"
+			class="w-full rounded-xl border border-text/[0.06] dark:border-white/[0.06] bg-surface/60 dark:bg-surface/40 backdrop-blur-sm p-4 text-left"
 		>
 			<ChapterList
 				chapters={loadedBook.chapters}
