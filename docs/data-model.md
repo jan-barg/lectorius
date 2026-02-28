@@ -1,6 +1,6 @@
 # lectorius — data model
 
-**version:** 1.1
+**version:** 1.2
 **status:** draft
 **last updated:** february 2026
 
@@ -34,32 +34,34 @@ from datetime import datetime
 class BookMeta(BaseModel):
     book_id: str
     title: str
-    author: str | None
-    language: str
-    year: int | None
-    book_type: Literal["fiction", "non-fiction", "biography"]
-    source: str | None
-    source_id: str | None
+    author: str | None = None
+    language: str = "en"
+    year: int | None = None
+    book_type: Literal["fiction", "non-fiction", "biography"] = "fiction"
+    source: str | None = None
+    source_id: str | None = None
     status: Literal["available", "coming_soon"] = "available"
+    tts_provider: Literal["openai", "elevenlabs"] | None = None
+    voice_id: str | None = None
 
 # =============================================================================
 # manifest
 # =============================================================================
 
 class ManifestConfig(BaseModel):
-    tts_voice_id: str
-    tts_model: str
-    chunk_target_chars: int
-    chunk_min_chars: int
-    chunk_max_chars: int
-    checkpoint_interval_chunks: int
-    embedding_model: str
+    tts_voice_id: str = ""
+    tts_model: str = ""
+    chunk_target_chars: int = 600
+    chunk_min_chars: int = 100
+    chunk_max_chars: int = 1600
+    checkpoint_interval_chunks: int = 50
+    embedding_model: str = ""
 
 class ManifestStats(BaseModel):
-    chapters: int
-    chunks: int
-    total_audio_duration_ms: int
-    total_chars: int
+    chapters: int = 0
+    chunks: int = 0
+    total_audio_duration_ms: int = 0
+    total_chars: int = 0
 
 class Manifest(BaseModel):
     book_id: str
@@ -106,7 +108,7 @@ class PlaybackMapEntry(BaseModel):
     chunk_index: int
     audio_path: str             # relative: audio/chunks/{chunk_id}.mp3
     duration_ms: int
-    start_ms: int               # always 0 for per-chunk audio
+    start_ms: int = 0           # always 0 for per-chunk audio
     end_ms: int                 # same as duration_ms
 
 # =============================================================================
@@ -114,28 +116,10 @@ class PlaybackMapEntry(BaseModel):
 # =============================================================================
 
 class RAGMeta(BaseModel):
-    vector_id: int              # index in faiss, 0-indexed
+    vector_id: int              # 0-indexed position in meta.jsonl
     chunk_id: str
     chunk_index: int
     chapter_id: str
-
-# =============================================================================
-# database tables (supabase postgres + pgvector)
-# =============================================================================
-
-# book_embeddings — stores embedding vectors for similarity search
-# populated by pipeline RAG stage, queried by web app /api/ask
-#
-# CREATE TABLE book_embeddings (
-#   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-#   book_id text NOT NULL,
-#   chunk_id text NOT NULL,
-#   chunk_index integer NOT NULL,
-#   chapter_id text NOT NULL,
-#   embedding vector(1536) NOT NULL
-# );
-#
-# CREATE INDEX ON book_embeddings USING ivfflat (embedding vector_cosine_ops);
 
 # =============================================================================
 # memory checkpoints
@@ -197,6 +181,8 @@ export interface BookMeta {
   source: string | null;
   source_id: string | null;
   status?: 'available' | 'coming_soon';  // defaults to 'available'
+  tts_provider?: 'openai' | 'elevenlabs';
+  voice_id?: string;
 }
 
 // =============================================================================
@@ -270,17 +256,6 @@ export interface PlaybackMapEntry {
   duration_ms: number;
   start_ms: number;
   end_ms: number;
-}
-
-// =============================================================================
-// rag metadata
-// =============================================================================
-
-export interface RAGMeta {
-  vector_id: number;
-  chunk_id: string;
-  chunk_index: number;
-  chapter_id: string;
 }
 
 // =============================================================================
@@ -378,6 +353,7 @@ export interface PlaybackState {
   chunk_time_ms: number;
   is_playing: boolean;
   playback_speed: PlaybackSpeed;
+  volume: number;
   sleep_timer_end: number | null;
 }
 
@@ -387,7 +363,8 @@ export const DEFAULT_PLAYBACK_STATE: PlaybackState = {
   chunk_time_ms: 0,
   is_playing: false,
   playback_speed: 1,
-  sleep_timer_end: null,
+  volume: 1,
+  sleep_timer_end: null
 };
 
 // =============================================================================
@@ -442,19 +419,37 @@ export interface BookPosition {
 }
 
 export type SavedPositions = Record<string, BookPosition>;
-// example: { "yellow-wallpaper": { chunk_index: 12, chunk_time_ms: 3400 },
+// example: { "pride-and-prejudice": { chunk_index: 12, chunk_time_ms: 3400 },
 //            "rip-van-winkle": { chunk_index: 5, chunk_time_ms: 0 } }
 
-// key: "lectorius_settings"
-export interface StoredSettings {
-  playback_speed: PlaybackSpeed;
-  volume: number;
+// key: "lectorius_user"
+// plain string — the user's display name
+// example: "Alice"
+
+// key: "lectorius_theme"
+// plain string — "light" | "dark" | "system"
+
+// key: "lectorius_music"
+// persisted subset of MusicState (see section 5b)
+interface PersistedMusic {
+  current_playlist_id: string | null;
+  current_song_index: number;
+  current_time: number;
+  volume: number;            // 0-100
+  loop: boolean;
+  sync_with_book: boolean;
 }
 
-export const DEFAULT_SETTINGS: StoredSettings = {
-  playback_speed: 1,
-  volume: 1.0,
-};
+// key: "lectorius_reading_history"
+// per-book history keyed by book_id
+export interface ReadingHistoryEntry {
+  book_id: string;
+  last_chunk_index: number;
+  total_chunks: number;
+  last_played: number;       // Date.now() timestamp
+}
+
+export type SavedHistory = Record<string, ReadingHistoryEntry>;
 ```
 
 ---
@@ -478,43 +473,74 @@ export interface GetBookResponse {
 }
 
 // POST /api/ask
-export interface AskRequest {
+// request body (JSON):
+interface AskRequest {
   book_id: string;
   chunk_index: number;
-  chunk_time_ms: number;
-  audio: Blob;
+  audio_base64: string;        // base64-encoded webm audio
 }
+// headers: X-User-Name (optional)
 
-export interface AskResponseSuccess {
-  success: true;
-  question_text: string;
-  answer_text: string;
-  answer_audio: string;
+// response: text/event-stream (SSE)
+// each message is: data: {json}\n\n
+//
+// message types sent by server:
+{ type: 'question', text: string }
+{ type: 'audio', text: string, audio: string }  // audio = base64 mp3
+{ type: 'done', full_answer: string }
+{ type: 'error', error?: string, fallback_audio_url: string }
+
+// non-SSE error responses (JSON, from hooks middleware):
+{ error: 'Too many questions. Try again later.' }  // 429
+{ error: 'Free limit reached' }                     // 403
+{ error: 'Service temporarily unavailable' }        // 503
+
+// POST /api/verify-code
+// request body:
+interface VerifyCodeRequest {
+  code: string;
+  user_name?: string;
 }
+// response:
+{ success: true }                                    // 200 (sets httpOnly cookie)
+{ success: false, error: string }                    // 400 | 401 | 500
 
-export type FallbackAudioId = 'error' | 'book_only' | 'no_context_yet';
-
-export interface AskResponseError {
-  success: false;
-  error: string;
-  fallback_audio_id: FallbackAudioId;
+// GET /api/music/playlists
+interface GetPlaylistsResponse {
+  playlists: {
+    playlist_id: string;
+    name: string;
+    type: 'general' | 'book';
+    book_id: string | null;
+    songs: { title: string; file_url: string }[];
+  }[];
 }
-
-export type AskResponse = AskResponseSuccess | AskResponseError;
 ```
 
 ---
 
 ## 7. system audio (fallbacks)
 
-pre-recorded audio stored in `system/audio/`:
+fallback audio is stored in supabase storage under two paths:
 
-| file | fallback id | text | use case |
-|------|-------------|------|----------|
-| `no_context_yet.mp3` | `no_context_yet` | "i don't have enough context yet—let's keep reading." | question in first 30 sec |
-| `book_only.mp3` | `book_only` | "i can only help with questions about this book." | off-topic question |
-| `error.mp3` | `error` | "i can't seem to find an answer right now." | api failure |
-| `resuming.mp3` | — | "let's get back to the story." | after q&a (optional) |
+**generic fallbacks** — `system/audio/{id}.mp3`
+used when no per-voice version exists or as a last resort.
+
+**per-voice fallbacks** — `system/fallback-audio/{voice_id}/{id}.mp3`
+generated by the `lectorius-pipeline generate-fallbacks` CLI command.
+each book's `voice_id` (from book.json) gets its own set of fallbacks
+so the error/fallback voice matches the narrator voice.
+
+the server resolves fallback URLs via:
+```
+if (voiceId) → {SUPABASE_URL}/storage/v1/object/public/system/fallback-audio/{voiceId}/{id}.mp3
+else         → {SUPABASE_URL}/storage/v1/object/public/system/audio/{id}.mp3
+```
+
+| fallback id | text | use case |
+|-------------|------|----------|
+| `no_context_yet` | "i don't have enough context yet—let's keep reading." | question before chunk 5 |
+| `error` | "i can't seem to find an answer right now." | api/tts failure |
 
 ---
 
@@ -522,11 +548,99 @@ pre-recorded audio stored in `system/audio/`:
 
 | entity | format | example |
 |--------|--------|---------|
-| book_id | lowercase slug | `great-gatsby` |
-| chapter_id | `{book_id}_ch{index:03d}` | `great-gatsby_ch001` |
-| chunk_id | `{chapter_id}_{chunk_index:06d}` | `great-gatsby_ch001_000042` |
+| book_id | lowercase slug | `pride-and-prejudice` |
+| chapter_id | `{book_id}_ch{index:03d}` | `pride-and-prejudice_ch001` |
+| chunk_id | `{chapter_id}_{chunk_index:06d}` | `pride-and-prejudice_ch001_000042` |
 | checkpoint_index | 1-indexed integer | `5` |
 | thread_id | `thread_{NNN}` | `thread_001` |
+
+current books: `rip-van-winkle`, `a-christmas-carol`, `pride-and-prejudice`, `metamorphosis`, `great-gatsby` (pending), `yellow-wallpaper` (legacy)
+
+---
+
+## 8b. music types
+
+located in `apps/web/src/lib/stores/music.ts`
+
+```typescript
+export interface Song {
+  title: string;
+  file_url: string;
+  duration_ms: number;       // set at runtime from audio metadata
+}
+
+export interface Playlist {
+  playlist_id: string;
+  name: string;
+  type: 'general' | 'book';
+  book_id: string | null;
+  songs: Song[];
+}
+
+export interface MusicState {
+  current_playlist_id: string | null;
+  current_song_index: number;
+  current_time: number;
+  volume: number;            // 0-100
+  loop: boolean;
+  is_playing: boolean;
+  ducked: boolean;           // lowered during Q&A
+  sync_with_book: boolean;   // auto-switch playlist when book changes
+}
+```
+
+---
+
+## 8c. database tables (supabase postgres)
+
+```sql
+-- embedding vectors for RAG similarity search (pgvector)
+-- populated by pipeline RAG stage, queried by web app /api/ask
+CREATE TABLE book_embeddings (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  book_id text NOT NULL,
+  chunk_id text NOT NULL,
+  chunk_index integer NOT NULL,
+  chapter_id text NOT NULL,
+  embedding vector(1536) NOT NULL
+);
+CREATE INDEX ON book_embeddings USING ivfflat (embedding vector_cosine_ops);
+
+-- valid access codes for unlimited Q&A
+CREATE TABLE access_codes (
+  id serial PRIMARY KEY,
+  code text UNIQUE NOT NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- logs every Q&A question (used for free-tier counting by IP)
+CREATE TABLE question_log (
+  id serial PRIMARY KEY,
+  ip text,
+  user_name text,
+  book_id text,
+  question text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- logs every access code redemption
+CREATE TABLE code_usage_log (
+  id serial PRIMARY KEY,
+  code text,
+  ip text,
+  user_name text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- music playlists (general ambient + per-book themed)
+CREATE TABLE playlists (
+  playlist_id text PRIMARY KEY,
+  name text NOT NULL,
+  type text NOT NULL,          -- 'general' | 'book'
+  book_id text,                -- null for general playlists
+  folder_path text NOT NULL    -- supabase storage path
+);
+```
 
 ---
 

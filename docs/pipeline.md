@@ -1,6 +1,6 @@
 # lectorius — data pipeline specification
 
-**version:** 1.5
+**version:** 1.6
 **status:** draft
 **last updated:** february 2026
 
@@ -14,23 +14,25 @@ every processed book produces a self-contained directory:
 books/{book_id}/
 ├── manifest.json              # pack metadata + processing info
 ├── raw_text.txt               # normalized source text
-├── book.json                  # book metadata
+├── book.json                  # book metadata (includes tts_provider, voice_id)
 ├── chapters.jsonl             # chapter boundaries
 ├── chunks.jsonl               # atomic text units
 ├── playback_map.jsonl         # chunk → audio mapping
 ├── audio/
 │   └── chunks/
 │       └── {chunk_id}.mp3
-├── rag/                           # local only (embeddings live in supabase pgvector)
-│   ├── index.faiss            # local debugging/testing
-│   └── meta.jsonl             # local reference (vector_id → chunk mapping)
+├── rag/                       # local reference (embeddings live in supabase pgvector)
+│   └── meta.jsonl             # vector_id → chunk mapping
 ├── memory/
 │   └── checkpoints.jsonl      # periodic story summaries
 └── reports/
     ├── ingest.json
     ├── chapters.json
     ├── chunks.json
-    └── tts.json
+    ├── validation.json
+    ├── tts.json
+    ├── rag.json
+    └── memory.json
 ```
 
 ---
@@ -41,17 +43,17 @@ books/{book_id}/
 
 ```json
 {
-  "book_id": "b001",
+  "book_id": "pride-and-prejudice",
   "version": 1,
   "created_at": "2025-06-15T14:32:00Z",
   "updated_at": "2025-06-15T16:45:00Z",
   "pipeline_version": "1.0.0",
   "stages_completed": ["ingest", "chapterize", "chunkify", "validate", "tts", "rag", "memory"],
   "config": {
-    "tts_voice_id": "voice_abc123",
+    "tts_voice_id": "dAlhI9qAHVIjXuVppzhW",
     "tts_model": "eleven_multilingual_v2",
     "chunk_target_chars": 600,
-    "chunk_min_chars": 200,
+    "chunk_min_chars": 100,
     "chunk_max_chars": 1600,
     "checkpoint_interval_chunks": 50,
     "embedding_model": "text-embedding-3-small"
@@ -69,14 +71,17 @@ books/{book_id}/
 
 ```json
 {
-  "book_id": "b001",
-  "title": "Pan Tadeusz",
-  "author": "Adam Mickiewicz",
-  "language": "pl",
-  "year": 1834,
+  "book_id": "pride-and-prejudice",
+  "title": "Pride and Prejudice",
+  "author": "Jane Austen",
+  "language": "en",
+  "year": 1813,
   "book_type": "fiction",
   "source": "gutenberg",
-  "source_id": "pg12345"
+  "source_id": "pg1342",
+  "status": "available",
+  "tts_provider": "elevenlabs",
+  "voice_id": "dAlhI9qAHVIjXuVppzhW"
 }
 ```
 
@@ -85,8 +90,8 @@ books/{book_id}/
 one json object per line:
 
 ```json
-{"book_id": "b001", "chapter_id": "b001_ch001", "index": 1, "title": "Księga pierwsza: Gospodarstwo", "char_start": 0, "char_end": 24531}
-{"book_id": "b001", "chapter_id": "b001_ch002", "index": 2, "title": "Księga druga: Zamek", "char_start": 24532, "char_end": 51204}
+{"book_id": "pride-and-prejudice", "chapter_id": "pride-and-prejudice_ch001", "index": 1, "title": "Chapter 1", "char_start": 0, "char_end": 4531}
+{"book_id": "pride-and-prejudice", "chapter_id": "pride-and-prejudice_ch002", "index": 2, "title": "Chapter 2", "char_start": 4532, "char_end": 9204}
 ```
 
 | field | type | description |
@@ -101,7 +106,7 @@ one json object per line:
 ### chunks.jsonl
 
 ```json
-{"book_id": "b001", "chapter_id": "b001_ch001", "chunk_id": "b001_ch001_000001", "chunk_index": 1, "text": "Litwo! Ojczyzno moja! ty jesteś jak zdrowie...", "char_start": 0, "char_end": 587}
+{"book_id": "pride-and-prejudice", "chapter_id": "pride-and-prejudice_ch001", "chunk_id": "pride-and-prejudice_ch001_000001", "chunk_index": 1, "text": "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.", "char_start": 0, "char_end": 587}
 ```
 
 | field | type | description |
@@ -119,7 +124,7 @@ one json object per line:
 ### playback_map.jsonl
 
 ```json
-{"chunk_id": "b001_ch001_000001", "chapter_id": "b001_ch001", "chunk_index": 1, "audio_path": "audio/chunks/b001_ch001_000001.mp3", "duration_ms": 4523, "start_ms": 0, "end_ms": 4523}
+{"chunk_id": "pride-and-prejudice_ch001_000001", "chapter_id": "pride-and-prejudice_ch001", "chunk_index": 1, "audio_path": "audio/chunks/pride-and-prejudice_ch001_000001.mp3", "duration_ms": 4523, "start_ms": 0, "end_ms": 4523}
 ```
 
 | field | type | description |
@@ -135,36 +140,36 @@ one json object per line:
 ### rag/meta.jsonl
 
 ```json
-{"vector_id": 0, "chunk_id": "b001_ch001_000001", "chunk_index": 1, "chapter_id": "b001_ch001"}
+{"vector_id": 0, "chunk_id": "pride-and-prejudice_ch001_000001", "chunk_index": 1, "chapter_id": "pride-and-prejudice_ch001"}
 ```
 
 | field | type | description |
 |-------|------|-------------|
-| vector_id | int | index in faiss (0-indexed, matches line number) |
+| vector_id | int | 0-indexed position (matches line number) |
 | chunk_id | string | references chunks.jsonl |
 | chunk_index | int | for spoiler filtering at query time |
 | chapter_id | string | for chapter-scoped retrieval |
 
-**invariant:** line N in meta.jsonl corresponds to vector N in index.faiss.
+**invariant:** line N in meta.jsonl corresponds to vector_id N. the same data is also stored in the supabase `book_embeddings` table for runtime queries.
 
 ### memory/checkpoints.jsonl
 
 ```json
 {
-  "book_id": "b001",
+  "book_id": "pride-and-prejudice",
   "checkpoint_index": 5,
   "until_chunk_index": 250,
-  "until_chunk_id": "b001_ch003_000250",
-  "summary": "The story follows Tadeusz returning to Lithuania...",
+  "until_chunk_id": "pride-and-prejudice_ch012_000250",
+  "summary": "The Bennet family's quiet life in Hertfordshire is disrupted by the arrival of Mr. Bingley and his friend Mr. Darcy...",
   "entities": {
     "people": [
-      {"name": "Tadeusz", "aliases": ["Pan Tadeusz"], "role": "protagonist", "description": "Young nobleman returning home", "first_chunk": 1, "last_chunk": 248}
+      {"name": "Elizabeth Bennet", "aliases": ["Lizzy", "Eliza"], "role": "protagonist", "description": "Second Bennet daughter, witty and perceptive", "first_chunk": 1, "last_chunk": 248}
     ],
     "places": [
-      {"name": "Soplicowo", "description": "The Soplica family estate", "first_chunk": 1, "last_chunk": 250}
+      {"name": "Longbourn", "description": "The Bennet family estate in Hertfordshire", "first_chunk": 1, "last_chunk": 250}
     ],
     "open_threads": [
-      {"id": "thread_001", "description": "Castle ownership dispute", "status": "open", "introduced_chunk": 45, "last_updated_chunk": 230}
+      {"id": "thread_001", "description": "Elizabeth's growing prejudice against Darcy", "status": "open", "introduced_chunk": 15, "last_updated_chunk": 230}
     ]
   }
 }
@@ -370,65 +375,68 @@ sentences = re.split(pattern, paragraph)
 
 ---
 
-Yes, update docs first. Keeps everything in sync.
-
----
-
-## Changes to `/docs/pipeline.md`
-
-Find the TTS stage section and replace with:
-
-```markdown
 ### stage 5: generate audio (tts)
 
-**input:** `chunks.jsonl`, tts configuration  
+**input:** `chunks.jsonl`, `book.json` (optional — for provider/voice defaults)
 **output:** `audio/chunks/*.mp3`, `playback_map.jsonl`, `reports/tts.json`
+
+#### provider resolution
+
+the tts stage resolves provider and voice using a priority chain:
+
+```
+CLI --provider/--voice flags  →  book.json tts_provider/voice_id  →  "openai" default
+```
+
+this means `lectorius-pipeline tts --book-dir ./books/pride-and-prejudice` reads the provider and voice from `book.json` automatically — no flags needed.
 
 #### providers
 
-| provider | model | cost per 1M chars | use case |
-|----------|-------|-------------------|----------|
-| openai | tts-1 | $15 | development, testing |
-| openai | tts-1-hd | $30 | higher quality |
-| elevenlabs | eleven_multilingual_v2 | ~$300 (quota-based) | production quality |
+| provider | model | default voice | use case |
+|----------|-------|---------------|----------|
+| openai | gpt-4o-mini-tts | nova | development, testing |
+| elevenlabs | eleven_multilingual_v2 | (from book.json or `ELEVENLABS_VOICE_ID` env) | production quality |
+
+**openai voices:** alloy, ash, ballad, coral, echo, fable, nova, onyx, sage, shimmer, verse
 
 #### configuration
 
 | parameter | description |
 |-----------|-------------|
-| provider | `openai` or `elevenlabs` |
-| voice | openai: alloy, echo, fable, onyx, nova, shimmer / elevenlabs: voice_id |
-| model | openai: tts-1 or tts-1-hd / elevenlabs: eleven_multilingual_v2 |
+| provider | `openai` or `elevenlabs` (resolved from book.json if not specified) |
+| voice | openai voice name or elevenlabs voice_id (resolved from book.json if not specified) |
+| model | openai: `gpt-4o-mini-tts` / elevenlabs: `eleven_multilingual_v2` |
 | concurrency | max parallel requests (default: 5) |
 | retry_attempts | max retries per chunk (default: 3) |
 
 #### process
 
-1. load progress from existing tts.json if resuming
-2. for each chunk:
+1. resolve provider/voice from CLI flags, book.json, or defaults
+2. load progress from existing tts.json if resuming
+3. for each chunk:
    - skip if already completed
    - call provider api
    - save to `audio/chunks/{chunk_id}.mp3`
    - measure duration via mutagen
    - write playback_map entry
    - update progress
-3. retry with exponential backoff on failures
-4. sort playback_map.jsonl by chunk_index
+4. retry with exponential backoff on failures (base: 2.0s)
+5. sort playback_map.jsonl by chunk_index
 
 #### cli
 
 ```bash
-# openai (default, cheap for testing)
-lectorius-pipeline tts --book-dir ./books/my-book --provider openai
+# auto-detect provider/voice from book.json
+lectorius-pipeline tts --book-dir ./books/pride-and-prejudice
 
-# elevenlabs (production)
-lectorius-pipeline tts --book-dir ./books/my-book --provider elevenlabs
-
-# resume interrupted
-lectorius-pipeline tts --book-dir ./books/my-book --provider openai --resume
-
-# custom voice
+# explicit openai (overrides book.json)
 lectorius-pipeline tts --book-dir ./books/my-book --provider openai --voice nova
+
+# explicit elevenlabs
+lectorius-pipeline tts --book-dir ./books/my-book --provider elevenlabs --voice <voice_id>
+
+# resume interrupted processing
+lectorius-pipeline tts --book-dir ./books/my-book --resume
 ```
 
 #### resumability
@@ -444,45 +452,39 @@ fully resumable—rerun skips completed chunks, processes only missing/failed.
 | api client error (4xx) | log failure, skip chunk |
 | audio file write fails | fail stage |
 
-
 ---
 
 ### stage 6: build rag index
 
 **input:** `chunks.jsonl`, embedding configuration, supabase credentials
-**output:** `rag/index.faiss` (local), `rag/meta.jsonl` (local), supabase `book_embeddings` table, `reports/rag.json`
+**output:** `rag/meta.jsonl` (local reference), supabase `book_embeddings` table, `reports/rag.json`
 
 #### configuration
 
 | parameter | description |
 |-----------|-------------|
-| embedding_model | e.g., `text-embedding-3-small` |
-| embedding_dimensions | e.g., 1536 |
+| embedding_model | `text-embedding-3-small` (default) |
+| embedding_dimensions | 1536 |
 | batch_size | chunks per api call (default: 100) |
-| index_type | faiss index type (default: `IndexFlatIP`) |
 
 #### process
 
-1. initialize faiss index
-2. batch process chunks:
+1. batch process chunks:
    - embed texts via openai api
    - normalize vectors (L2)
-   - add to index
    - write meta.jsonl entries
-3. save index to `rag/index.faiss` (local reference/debugging)
-4. insert embeddings into supabase `book_embeddings` table:
+2. insert embeddings into supabase `book_embeddings` table:
    - delete existing rows for this book_id (idempotent re-runs)
    - insert rows in batches of 100 with book_id, chunk_id, chunk_index, chapter_id, embedding
 
 #### environment variables
 
-requires `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (service key, not anon — bypasses RLS for insert).
+requires `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_SERVICE_KEY` (service key, not anon — bypasses RLS for insert).
 
-#### local vs remote outputs
+#### outputs
 
 | output | location | purpose |
 |--------|----------|---------|
-| `rag/index.faiss` | local book dir | python debugging/testing with faiss |
 | `rag/meta.jsonl` | local book dir | local reference, maps vector_id to chunk |
 | `book_embeddings` rows | supabase postgres | web app vector similarity search via pgvector |
 
@@ -516,11 +518,13 @@ limit $k;
 
 #### process
 
-1. determine checkpoint positions: every N chunks + final
+1. determine checkpoint positions:
+   - **short books** (< 100 chunks): checkpoints at 25%, 50%, 75%, and 100%
+   - **longer books**: every N chunks (default: 50) + final position
 2. for each position:
    - gather previous checkpoint + new chunks
    - build prompt requesting json output
-   - call llm, parse response
+   - call llm (max_tokens: 8192), parse response
    - write checkpoint
 
 #### llm prompt
@@ -591,32 +595,128 @@ def prune_entities(entities: Entities, current_chunk: int, lookback: int = 200) 
 
 ---
 
+### stage 8: generate fallback audio
+
+**input:** `book.json` (for voice/provider) OR explicit `--provider`/`--voice` flags
+**output:** per-voice fallback MP3s uploaded to supabase storage
+
+this is a standalone stage (not part of the `process` pipeline) that generates pre-recorded error/fallback audio in the book's narrator voice, so the web app can serve instant responses that match the book's voice instead of a generic fallback.
+
+#### fallback phrases
+
+| id | text | use case |
+|----|------|----------|
+| `no_context_yet` | "I don't have enough context yet. Let's keep reading." | question asked before chunk 5 |
+| `error` | "I can't seem to find an answer right now." | api/tts failure during Q&A |
+| `book_only` | "I can only help with questions about this book." | off-topic question |
+
+#### resolution
+
+provider and voice are resolved using the same priority chain as the TTS stage:
+
+```
+CLI --provider/--voice flags  →  book.json tts_provider/voice_id  →  error (no default)
+```
+
+unlike the TTS stage, there is no default provider — at least one source of provider/voice is required.
+
+#### process
+
+1. resolve provider and voice from flags or book.json
+2. create supabase storage client
+3. for each fallback phrase:
+   - check if `system/fallback-audio/{voice_id}/{id}.mp3` already exists in storage
+   - if not, generate audio via TTS provider
+   - upload to supabase storage
+4. return status for each fallback (uploaded or already existed)
+
+#### storage structure
+
+```
+supabase storage / system /
+├── audio/                          ← generic fallbacks (OpenAI "alloy")
+│   ├── no_context_yet.mp3
+│   ├── error.mp3
+│   └── book_only.mp3
+└── fallback-audio/                 ← per-voice fallbacks
+    ├── dAlhI9qAHVIjXuVppzhW/      ← pride-and-prejudice voice
+    │   ├── no_context_yet.mp3
+    │   ├── error.mp3
+    │   └── book_only.mp3
+    └── .../
+```
+
+books sharing the same `voice_id` share fallback files. generic fallbacks remain as final fallback when no per-voice version exists.
+
+#### environment variables
+
+requires `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` for storage access, plus the relevant TTS provider key (`OPENAI_API_KEY` or `ELEVENLABS_API_KEY`).
+
+#### cli
+
+```bash
+# from book.json (reads provider + voice automatically)
+lectorius-pipeline generate-fallbacks --book-dir ./books/pride-and-prejudice
+
+# explicit provider + voice (no book-dir needed)
+lectorius-pipeline generate-fallbacks --provider elevenlabs --voice dAlhI9qAHVIjXuVppzhW
+
+# with verbose logging
+lectorius-pipeline generate-fallbacks --book-dir ./books/pride-and-prejudice -v
+```
+
+---
+
 ## pipeline orchestration
 
 ### cli interface
 
 ```bash
-# full pipeline
-lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001
+# full pipeline (ingest through validate)
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice
 
-# full pipeline with llm-assisted text analysis
-lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --llm-assist
+# with llm-assisted text analysis
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice --llm-assist
+
+# set tts provider/voice in book.json during ingest
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice --tts-provider elevenlabs --voice-id <id>
 
 # stop after a specific stage
-lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --stop-after chunkify
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice --stop-after chunkify
 
-# resume from a specific stage (requires existing outputs from prior stages)
-lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 --from-stage chapterize
+# resume from a specific stage
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice --from-stage chapterize
 
-# individual stages
-lectorius-pipeline ingest --input book.epub --output-dir ./books/b001
-lectorius-pipeline ingest --input book.epub --output-dir ./books/b001 --llm-assist
-lectorius-pipeline chapterize --book-dir ./books/b001 --book-id b001
-lectorius-pipeline chunkify --book-dir ./books/b001 --book-id b001
-lectorius-pipeline validate --book-dir ./books/b001 --book-id b001
+# individual stages (text processing)
+lectorius-pipeline ingest --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice
+lectorius-pipeline ingest --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice --llm-assist
+lectorius-pipeline chapterize --book-dir ./books/pride-and-prejudice --book-id pride-and-prejudice
+lectorius-pipeline chunkify --book-dir ./books/pride-and-prejudice --book-id pride-and-prejudice
+lectorius-pipeline validate --book-dir ./books/pride-and-prejudice --book-id pride-and-prejudice
 
-# verbose logging
-lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books/b001 -v
+# audio generation (reads provider/voice from book.json)
+lectorius-pipeline tts --book-dir ./books/pride-and-prejudice
+lectorius-pipeline tts --book-dir ./books/pride-and-prejudice --resume
+
+# rag index
+lectorius-pipeline rag --book-dir ./books/pride-and-prejudice
+
+# memory checkpoints
+lectorius-pipeline memory --book-dir ./books/pride-and-prejudice
+
+# per-voice fallback audio
+lectorius-pipeline generate-fallbacks --book-dir ./books/pride-and-prejudice
+
+# verbose logging (works with any command)
+lectorius-pipeline process --input book.epub --book-id pride-and-prejudice \
+  --output-dir ./books/pride-and-prejudice -v
 ```
 
 ### stage dependencies
@@ -625,6 +725,8 @@ lectorius-pipeline process --input book.epub --book-id b001 --output-dir ./books
 ingest → chapterize → chunkify → validate → tts → [rag, memory]
                                               ↘      ↗
                                            (parallel)
+
+generate-fallbacks  (standalone, requires book.json or explicit flags)
 ```
 
 ### manifest updates
@@ -654,13 +756,17 @@ chunking:
   target_chars: 600
   min_chars: 200
   max_chars: 1600
-  sentence_splitter: spacy
-  spacy_model_en: en_core_web_sm
+  sentence_splitter: regex       # "regex" (default) or "spacy"
+  spacy_model_en: en_core_web_sm # used when sentence_splitter is "spacy"
 
 tts:
-  provider: elevenlabs
-  voice_id: ${ELEVENLABS_VOICE_ID}
-  model: eleven_multilingual_v2
+  # provider and voice are typically set per-book in book.json
+  # these serve as defaults when book.json doesn't specify
+  provider: openai               # "openai" or "elevenlabs"
+  openai_model: gpt-4o-mini-tts
+  openai_voice: nova
+  elevenlabs_model: eleven_multilingual_v2
+  elevenlabs_voice_id: ${ELEVENLABS_VOICE_ID}
   output_format: mp3_44100_128
   concurrency: 5
   retry_attempts: 3
@@ -671,8 +777,7 @@ rag:
   embedding_model: text-embedding-3-small
   embedding_dimensions: 1536
   batch_size: 100
-  index_type: IndexFlatIP
-  # embeddings are also inserted into supabase book_embeddings table
+  # embeddings are inserted into supabase book_embeddings table
   # requires SUPABASE_URL and SUPABASE_SERVICE_KEY env vars
 
 memory:
@@ -741,6 +846,19 @@ class LLMAnalysis(BaseModel):
 ```
 
 **data flow:** the `chapter_heading_pattern` from the LLM flows to the chapterize stage via `reports/ingest.json`. the chapterize runner loads the report and prepends the pattern to its detection list as the highest-priority `llm_detected` pattern. this allows the LLM to teach the pipeline about book-specific heading formats that the built-in patterns don't cover.
+
+---
+
+## environment variables
+
+| variable | required by | description |
+|----------|-------------|-------------|
+| `OPENAI_API_KEY` | tts (openai), rag | openai api key for TTS and embeddings |
+| `ELEVENLABS_API_KEY` | tts (elevenlabs), generate-fallbacks | elevenlabs api key |
+| `ELEVENLABS_VOICE_ID` | tts (elevenlabs) | fallback voice id if not in book.json or CLI |
+| `ANTHROPIC_API_KEY` | ingest (--llm-assist), memory | anthropic api key for claude |
+| `SUPABASE_URL` | rag, generate-fallbacks | supabase project url |
+| `SUPABASE_SERVICE_KEY` | rag, generate-fallbacks | supabase service key (not anon — bypasses RLS) |
 
 ---
 
