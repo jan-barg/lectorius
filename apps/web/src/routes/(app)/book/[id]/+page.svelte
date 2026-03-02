@@ -90,7 +90,7 @@
 </svelte:head>
 
 <div class="mx-auto max-w-5xl py-6">
-	<a href="/" class="mb-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted/60 transition-colors duration-300 hover:text-text">
+	<a href="/library" class="mb-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted/60 transition-colors duration-300 hover:text-text">
 		<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5">
 			<path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
 		</svg>
