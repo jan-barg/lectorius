@@ -38,7 +38,7 @@ an interactive audiobook platform with ai-powered, spoiler-free q&a
 │                                             │           │
 │                                    ┌────────┼────────┐  │
 │                                    ▼        ▼        ▼  │
-│                                   tts      rag    memory │
+│                                   tts      rag    memory│
 │                                    │        │        │  │
 │                                    ▼        ▼        ▼  │
 │                                  mp3s   pgvector  json  │
@@ -49,7 +49,7 @@ an interactive audiobook platform with ai-powered, spoiler-free q&a
 └─────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────┐
-│                    web app (sveltekit)                   │
+│                    web app (sveltekit)                  │
 │                                                         │
 │  browser                          vercel api routes     │
 │  ┌───────────────┐                ┌──────────────────┐  │
