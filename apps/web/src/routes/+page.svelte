@@ -32,6 +32,26 @@
 
 	$: currentQA = qaPairs[qaIndex];
 
+	/* ─── Mouse-following spotlight ─── */
+	let heroEl: HTMLElement;
+	let spotX = 50;
+	let spotY = 50;
+	let targetX = 50;
+	let targetY = 50;
+	let spotActive = false;
+	let rafId: number;
+
+	/* ─── Parallax glow orbs ─── */
+	let scrollY = 0;
+	let pageEl: HTMLElement;
+
+	/* ─── Typewriter reveal ─── */
+	const line1 = 'Books that';
+	const line2 = 'talk back.';
+	let typed1 = '';
+	let typed2 = '';
+	let typingDone = false;
+
 	function runCycle() {
 		// Reset
 		phase = 'reading';
@@ -88,7 +108,74 @@
 		// Start demo loop
 		runCycle();
 
-		return () => observer.disconnect();
+		// ─── Typewriter reveal ───
+		const totalChars = line1.length + line2.length;
+		let charIndex = 0;
+		const typeSpeed = 70; // ms per character
+		const typeDelay = 600; // initial delay before typing starts
+
+		setTimeout(() => {
+			const typeInterval = setInterval(() => {
+				if (charIndex < line1.length) {
+					typed1 = line1.slice(0, charIndex + 1);
+				} else {
+					typed2 = line2.slice(0, charIndex - line1.length + 1);
+				}
+				charIndex++;
+				if (charIndex >= totalChars) {
+					clearInterval(typeInterval);
+					typingDone = true;
+				}
+			}, typeSpeed);
+		}, typeDelay);
+
+		// ─── Parallax glow orbs ───
+		function onScroll() {
+			scrollY = window.scrollY;
+			if (pageEl) {
+				pageEl.style.setProperty('--scroll', `${scrollY}`);
+			}
+		}
+		window.addEventListener('scroll', onScroll, { passive: true });
+		onScroll();
+
+		// ─── Mouse-following spotlight ───
+		function onHeroMove(e: MouseEvent) {
+			if (!heroEl) return;
+			const rect = heroEl.getBoundingClientRect();
+			targetX = ((e.clientX - rect.left) / rect.width) * 100;
+			targetY = ((e.clientY - rect.top) / rect.height) * 100;
+			if (!spotActive) spotActive = true;
+		}
+		function onHeroLeave() {
+			spotActive = false;
+		}
+
+		function lerpSpot() {
+			spotX += (targetX - spotX) * 0.08;
+			spotY += (targetY - spotY) * 0.08;
+			if (heroEl) {
+				heroEl.style.setProperty('--spot-x', `${spotX}%`);
+				heroEl.style.setProperty('--spot-y', `${spotY}%`);
+			}
+			rafId = requestAnimationFrame(lerpSpot);
+		}
+
+		if (heroEl) {
+			heroEl.addEventListener('mousemove', onHeroMove);
+			heroEl.addEventListener('mouseleave', onHeroLeave);
+			rafId = requestAnimationFrame(lerpSpot);
+		}
+
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('scroll', onScroll);
+			if (heroEl) {
+				heroEl.removeEventListener('mousemove', onHeroMove);
+				heroEl.removeEventListener('mouseleave', onHeroLeave);
+			}
+			cancelAnimationFrame(rafId);
+		};
 	});
 
 	const techStack = [
@@ -111,10 +198,21 @@
 </svelte:head>
 
 <div class="dark">
-<div class="landing-page grain-overlay relative min-h-screen bg-[#0A0908] text-[#F2EEE8] overflow-x-hidden">
+<div bind:this={pageEl} class="landing-page grain-overlay relative min-h-screen bg-[#0A0908] text-[#F2EEE8] overflow-x-hidden">
+
+	<!-- Parallax glow orbs — drift at different rates as you scroll -->
+	<div class="parallax-orb orb-1" aria-hidden="true"></div>
+	<div class="parallax-orb orb-2" aria-hidden="true"></div>
+	<div class="parallax-orb orb-3" aria-hidden="true"></div>
 
 	<!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
-	<section class="relative min-h-screen flex flex-col overflow-hidden">
+	<section bind:this={heroEl} class="relative min-h-screen flex flex-col overflow-hidden">
+		<!-- Mouse-following candlelight spotlight -->
+		<div
+			class="hero-spotlight pointer-events-none absolute inset-0 z-[1] will-change-transform"
+			class:spotlight-active={spotActive}
+		></div>
+
 		<!-- Ambient glows -->
 		<div class="pointer-events-none absolute top-[-200px] left-[-100px] h-[600px] w-[600px] rounded-full bg-[#DCA072]/[0.06] blur-[180px] will-change-transform"></div>
 		<div class="pointer-events-none absolute bottom-[-100px] right-[-150px] h-[500px] w-[500px] rounded-full bg-[#BC6A34]/[0.04] blur-[160px] will-change-transform"></div>
@@ -133,8 +231,8 @@
 				<!-- Left: Copy -->
 				<div class="flex-1 z-10 text-center lg:text-left">
 					<h2 class="font-display leading-[0.98] tracking-[-0.03em] animate-fade-in-up stagger-2">
-						<span class="block text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] xl:text-[7.5rem] font-light text-[#F2EEE8]">Books that</span>
-						<span class="block text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] xl:text-[7.5rem] font-light italic text-[#DCA072]">talk back.</span>
+						<span class="block text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] xl:text-[7.5rem] font-light text-[#F2EEE8]">{typed1}{#if !typingDone && typed1.length < line1.length}<span class="type-cursor"></span>{/if}<span class="invisible" aria-hidden="true">{line1.slice(typed1.length)}</span></span>
+						<span class="block text-6xl sm:text-7xl md:text-8xl lg:text-[6.5rem] xl:text-[7.5rem] font-light italic text-[#DCA072]">{typed2}{#if !typingDone && typed2.length > 0}<span class="type-cursor"></span>{/if}<span class="invisible" aria-hidden="true">{line2.slice(typed2.length)}</span></span>
 					</h2>
 					<p class="mt-8 md:mt-10 text-[#F2EEE8]/50 font-sans text-lg sm:text-xl md:text-2xl leading-relaxed max-w-xl mx-auto lg:mx-0 animate-fade-in-up stagger-3">
 						Listen to classic literature narrated by AI voices matched to each story's era and tone. Then ask anything — spoiler-free.
@@ -539,6 +637,70 @@
 	.demo-bubble.revealed {
 		opacity: 1;
 		transform: translateX(0);
+	}
+
+	/* ─── Typewriter cursor ─── */
+	@keyframes cursor-blink {
+		0%, 100% { opacity: 1; }
+		50% { opacity: 0; }
+	}
+	.type-cursor {
+		display: inline-block;
+		width: 3px;
+		height: 0.7em;
+		background: #DCA072;
+		margin-left: 4px;
+		vertical-align: middle;
+		animation: cursor-blink 0.8s step-end infinite;
+	}
+
+	/* ─── Parallax glow orbs ─── */
+	.parallax-orb {
+		position: fixed;
+		border-radius: 50%;
+		pointer-events: none;
+		filter: blur(120px);
+		will-change: transform;
+		z-index: 0;
+	}
+	.orb-1 {
+		width: 500px;
+		height: 500px;
+		background: rgba(220, 160, 114, 0.04);
+		left: -10%;
+		top: 30%;
+		transform: translateY(calc(var(--scroll, 0) * -0.15px));
+	}
+	.orb-2 {
+		width: 350px;
+		height: 350px;
+		background: rgba(188, 106, 52, 0.035);
+		right: -5%;
+		top: 55%;
+		transform: translateY(calc(var(--scroll, 0) * -0.25px));
+	}
+	.orb-3 {
+		width: 420px;
+		height: 420px;
+		background: rgba(212, 162, 127, 0.025);
+		left: 40%;
+		top: 80%;
+		transform: translateY(calc(var(--scroll, 0) * -0.35px));
+	}
+
+	/* ─── Mouse-following candlelight spotlight ─── */
+	.hero-spotlight {
+		background: radial-gradient(
+			ellipse 600px 500px at var(--spot-x, 50%) var(--spot-y, 50%),
+			rgba(220, 160, 114, 0.06) 0%,
+			rgba(220, 160, 114, 0.02) 40%,
+			transparent 70%
+		);
+		opacity: 0;
+		transition: opacity 0.8s ease;
+	}
+	.hero-spotlight.spotlight-active {
+		opacity: 1;
 	}
 
 	/* ─── Landing page base ─── */
