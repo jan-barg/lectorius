@@ -15,7 +15,7 @@ an interactive audiobook platform with ai-powered, spoiler-free q&a
 
 ## demo
 
-**coming soon** — live demo link will be added here.
+**[lectorius.vercel.app](https://lectorius.vercel.app)**
 
 ---
 

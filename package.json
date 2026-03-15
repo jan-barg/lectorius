@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "openai": "^6.21.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-vercel": "^6.3.3"
   }
 }
