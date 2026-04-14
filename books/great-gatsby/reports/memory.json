@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "llm_model": "claude-sonnet-4-20250514",
+  "total_chunks": 540,
+  "checkpoints_generated": 10,
+  "checkpoint_positions": [
+    50,
+    100,
+    150,
+    200,
+    250,
+    300,
+    350,
+    400,
+    450,
+    500,
+    540
+  ],
+  "warnings": [
+    "Checkpoint 8 failed: LLM returned invalid JSON: Unterminated string starting at: line 491 column 24 (char 31402)\nRaw: ```json\n{\n  \"summary\": \"The story is narrated by Nick Carraway, a young Midwesterner who moves to West Egg, Long Island in 1922 to learn the bond business. He rents a small house next to the enormous "
+  ],
+  "errors": []
+}

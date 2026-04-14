@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "embedding_model": "text-embedding-3-small",
+  "total_chunks": 540,
+  "vectors_indexed": 540,
+  "dimensions": 1536,
+  "index_type": "pgvector",
+  "warnings": [],
+  "errors": []
+}

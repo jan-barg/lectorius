@@ -1,0 +1,13 @@
+{
+  "success": true,
+  "book_id": "great-gatsby",
+  "provider": "elevenlabs",
+  "voice": "MFZUKuGQUsGJPQjTS4wC",
+  "model": "eleven_multilingual_v2",
+  "total_chunks": 540,
+  "completed_chunks": 540,
+  "failed_chunks": 0,
+  "total_duration_ms": 15879606,
+  "warnings": [],
+  "errors": []
+}
